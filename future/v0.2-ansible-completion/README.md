@@ -45,20 +45,29 @@ git history) rather than kept around unused.
 | File | What it does |
 |---|---|
 | `completion/AnsibleModuleIndex.kt` | Loads a bundled JSON index of `ansible.builtin.*` module names + short descriptions. Data fetched once from the real `ansible/ansible` GitHub repo (the modules directory under `lib/ansible`, stable-2.17 branch, 69 modules with real descriptions after dropping 2 internal/deprecated ones) — see `resources/ansible_builtin_modules.json`. Hand-rolled minimal JSON parser (flat string map only) instead of a new dependency, same call as `AnsibleVaultCipher`/`ArchiveExtractor`. |
-| `completion/AnsibleModuleCompletionContributor.kt` | A `CompletionContributor` scoped to `AnsibleYamlFileType` (from `detection/`, unchanged from the LSP attempt — still needed to avoid hijacking Kubernetes/Helm/Docker-compose YAML) that offers `ansible.builtin.*` completions. |
-| `completion/CheckLicense.kt` | JetBrains's own reference license-verification code (ported from `github.com/JetBrains/marketplace-makemecoffee-plugin`, `CheckLicense.java`, fetched and diffed byte-for-byte for the two embedded root certificates), gating the completion contributor. `PRODUCT_CODE` is a placeholder — see below. |
+| `completion/AnsibleModuleCompletionContributor.kt` | A `CompletionContributor` scoped to `AnsibleYamlFileType` (from `detection/`, unchanged from the LSP attempt — still needed to avoid hijacking Kubernetes/Helm/Docker-compose YAML) **and** to YAML mapping-key positions specifically (`isCompletingYamlKey`, via `PsiTreeUtil`/`YAMLKeyValue`) so module names don't clutter completion while typing a value or comment. Not yet narrowed further to "top-level task key only" (see the class's own doc comment) — that needs live `runIde` verification to get right, not more guessing. |
+| `completion/CheckLicense.kt` | JetBrains's own reference license-verification code (ported from `github.com/JetBrains/marketplace-makemecoffee-plugin`, `CheckLicense.java`, fetched and diffed byte-for-byte for the two embedded root certificates), gating the completion contributor. `PRODUCT_CODE` is the real value (`[REDACTED-PRODUCT-CODE]`) — see below. |
+| `completion/JinjaExpressionDetector.kt` | Pure text scan for `{{ }}`/`{% %}`/`{# #}` Jinja2 regions inside a string, plus malformed-block detection (unterminated openers, stray closers) — addresses complaint #3. No real Jinja2 engine, no Python. Explicitly verified NOT to false-positive on YAML's own `{key: value}` flow-mapping syntax. |
+| `completion/JinjaHighlightingAnnotator.kt` | A generic-`PsiElement`-based `Annotator` (deliberately avoids depending on YAML-specific PSI types — see its doc comment) that highlights `JinjaExpressionDetector`'s regions using `DefaultLanguageHighlighterColors.TEMPLATE_LANGUAGE_COLOR`, gated behind the same license check with a 60s cache (`LicensingFacade` calls aren't free to make on every keystroke). |
 | `completion-tests/AnsibleModuleIndexTest.kt` | 6 JUnit tests: JSON parsing (escapes, empty object, sorting), FQCN formatting, and a real load of the bundled resource asserting sane content (50-200 modules, `copy`/`debug`/`command` present, every entry non-blank). |
+| `completion-tests/JinjaExpressionDetectorTest.kt` | 13 JUnit tests: all 3 region kinds, mixed/adjacent regions, empty expressions, unterminated/stray-closer malformed cases, and — the important one — confirming YAML's own `{...}`/`[...]` flow syntax is never mistaken for Jinja2 (that exact false positive is the incumbent's bug this feature is meant to avoid repeating). |
 
-**Verified for real, not just written:** temporarily staged
-`AnsibleModuleIndex.kt` and `CheckLicense.kt` into the live `src/main`
-(which already has the real IntelliJ Platform SDK cached from earlier
-`verifyPlugin` runs) and ran `./gradlew compileKotlin` — confirms
-`LicensingFacade`, `ActionUtil.performAction`, `AnActionEvent.createEvent`
-and the rest of the licensing API calls are correct against the actual
-2025.2.6.2 platform classpath, not just plausible-looking Kotlin. Also ran
-the real test suite (6/6 green, including a load of the actual bundled
-JSON through the real classpath). Removed the temporary copies afterward
-— `git status` confirmed nothing leaked into the live v0.1.x source set.
+**Verified for real, not just written:** temporarily staged every file in
+`completion/` and `detection/` into the live `src/main` (which already
+has the real IntelliJ Platform SDK cached from earlier `verifyPlugin`
+runs) — including a temporary `bundledPlugin("org.jetbrains.plugins.yaml")`
+line in `build.gradle.kts`, since `AnsibleModuleCompletionContributor`
+and `AnsibleYamlFileType` need it — and ran `./gradlew compileKotlin`.
+Confirms `LicensingFacade`, `ActionUtil.performAction`,
+`AnActionEvent.createEvent`, `Annotator`/`AnnotationHolder`/
+`TextAttributesKey`/`DefaultLanguageHighlighterColors`, and
+`YAMLKeyValue`/`PsiTreeUtil` are all called correctly against the actual
+2025.2.6.2 + bundled-YAML-plugin classpath, not just plausible-looking
+Kotlin. Also ran the real test suite (19/19 green across
+`AnsibleModuleIndexTest` + `JinjaExpressionDetectorTest`). Reverted
+`build.gradle.kts` and removed every temporary copy afterward — `git
+diff build.gradle.kts` and `git status` both confirmed nothing leaked
+into the live v0.1.x source set or build config.
 
 **Bug caught during this verification, worth remembering:** Kotlin block
 comments *nest* (unlike Java/C). A KDoc originally described the data
@@ -108,9 +117,18 @@ reproduced here so it doesn't get lost):
    freemium instead of fully paid. Did not know about this attribute
    before reading JetBrains's own checklist; it changes the
    `<product-descriptor>` tag below.
-8. Check that plugin.xml's `<vendor>` matches the `organization_id` created
-   in step 4 — may need to change from the display name "Gap Hunter Labs"
-   to whatever ID the organization gets.
+8. ~~Check that plugin.xml's `<vendor>` matches the `organization_id`.~~
+   **Checked (2026-07-23): they don't match yet.** The organization's ID
+   is the URL slug `[REDACTED-ORG-SLUG]` (from
+   `plugins.jetbrains.com/vendor/[REDACTED-ORG-SLUG]/edit/vendor`), lowercase
+   and hyphenated. Live `plugin.xml` currently has
+   `<vendor>Gap Hunter Labs</vendor>` — display-case, with a space. Do
+   **not** change this in the live v0.1.x `plugin.xml` right now (same
+   reasoning as the `<product-descriptor>` tag: changing vendor
+   metadata while v0.1.0/0.1.1/0.1.2 are mid-moderation is an
+   unnecessary risk to an unrelated, already-submitted change). Change
+   it to `[REDACTED-ORG-SLUG]` in the same batch of edits as adding
+   `<product-descriptor>`, when v0.2 actually ships.
 9. Set up pricing, offers, and coupons (this is where the actual
    $15-19/year price and 30-day trial get configured). **Confirmed
    2026-07-23: not available yet because both the plugin and the vendor
@@ -147,24 +165,39 @@ docs rather than guessing further:
 
 ## What's still pending before reactivating this in `src/main`
 
+Everything code-side is now built and compile-verified (FQCN completion,
+scoped to key-position; Jinja2 highlighting; licensing). What's left is
+mostly Marketplace-side and a few deliberate follow-ups:
+
 1. Add `<product-descriptor code="[REDACTED-PRODUCT-CODE]" release-date="YYYYMMDD" release-version="TBD" optional="true"/>`
-   to `plugin.xml` (see exact rules above for `release-version` —
-   don't reuse the placeholder literally) — **do not** add this to the
-   live v0.1.x `plugin.xml` before v0.2 actually ships in the same
-   release; it would misrepresent the currently-free vault plugin as paid.
-2. Decide the exact completion trigger (right now the contributor fires
-   on any completion inside an Ansible-detected file; consider scoping it
-   to task-list module-key position specifically, to avoid noisy
-   suggestions everywhere).
-3. Jinja2-in-YAML highlighting (complaint #3) — not started yet. Likely
-   an `Annotator` that tags `{{ }}`/`{% %}` regions inside YAML scalars
-   with distinct text attributes, not a full grammar/parser.
+   to `plugin.xml` (see exact rules above for `release-version` — don't
+   reuse the placeholder literally), **and** change `<vendor>` from
+   `Gap Hunter Labs` to `[REDACTED-ORG-SLUG]` in the same edit (checklist
+   item 8, confirmed above). **Do not** make either change to the live
+   v0.1.x `plugin.xml` before v0.2 actually ships in the same release.
+2. Narrow the completion trigger further: right now it fires on any YAML
+   key inside an Ansible-detected file, including nested module
+   parameters (e.g. inside `copy:\n  <caret>`), not just top-level task
+   keys. Needs live `runIde` verification to get the exact PSI shape
+   right rather than guessing further untested.
+3. Register `AnsibleModuleCompletionContributor` and
+   `JinjaHighlightingAnnotator` in `plugin.xml`'s `<extensions>` (the
+   latter with `language="yaml"` so the platform only invokes it for
+   YAML files — see the annotator's own doc comment).
 4. Move `detection/`, `completion/` back to `src/main/kotlin/...`, and
    `detection-tests/`, `completion-tests/` to `src/test/kotlin/...`.
+   Restore `bundledPlugin("org.jetbrains.plugins.yaml")` in
+   `build.gradle.kts` for real this time (not temporary).
 5. Run the full `verifyPlugin` (6 IDEs) before publishing.
+6. Manually verify Jinja2 highlighting and completion in a real `runIde`
+   sandbox (typed, not just compiled) — neither has been exercised in an
+   actual running editor yet, only compile-checked and unit-tested.
 
 ## To reactivate
 
-1. Add `<product-descriptor>` to `plugin.xml` (step 1 above).
-2. Move the folders per step 4 above.
-3. `./gradlew test buildPlugin verifyPlugin`.
+1. Add `<product-descriptor>` and fix `<vendor>` in `plugin.xml` (step 1
+   above).
+2. Move the folders per step 4 above, restore the YAML dependency for
+   real.
+3. Register the extensions in `plugin.xml` (step 3 above).
+4. `./gradlew test buildPlugin verifyPlugin`, then a manual `runIde` pass.

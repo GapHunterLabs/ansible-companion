@@ -7,8 +7,11 @@ import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.completion.CompletionType
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.patterns.PlatformPatterns
+import com.intellij.psi.PsiElement
+import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ProcessingContext
 import dev.gaphunter.ansiblecompanion.detection.AnsibleYamlFileType
+import org.jetbrains.yaml.psi.YAMLKeyValue
 
 /**
  * FQCN-aware completion (`ansible.builtin.*`), the paid v0.2 feature.
@@ -22,6 +25,16 @@ import dev.gaphunter.ansiblecompanion.detection.AnsibleYamlFileType
  * upsell item instead of the real completions, rather than either a
  * silent no-op or blocking the whole editor -- consistent with how most
  * freemium IntelliJ plugins surface their paid tier.
+ *
+ * Scoped to YAML mapping-KEY positions (`isCompletingYamlKey`) so module
+ * names don't clutter completion while typing a parameter value, a
+ * string, or a comment -- only while typing what would become a task's
+ * module key (`ansible.builtin.<caret>:`). NOT yet narrowed further to
+ * "specifically a top-level task key, not a nested module-parameter key"
+ * (e.g. it would still fire inside `copy:\n  <caret>`) -- that needs
+ * checking the key's enclosing mapping is itself a sequence-item value,
+ * which needs live runIde verification to get exactly right rather than
+ * guessing PSI shapes untested, so it's left as a follow-up (see README).
  */
 class AnsibleModuleCompletionContributor : CompletionContributor() {
     init {
@@ -31,6 +44,7 @@ class AnsibleModuleCompletionContributor : CompletionContributor() {
             object : CompletionProvider<CompletionParameters>() {
                 override fun addCompletions(parameters: CompletionParameters, context: ProcessingContext, result: CompletionResultSet) {
                     if (parameters.originalFile.fileType != AnsibleYamlFileType) return
+                    if (!isCompletingYamlKey(parameters.position)) return
 
                     if (CheckLicense.isLicensed() == false) {
                         result.addElement(upsellLookupElement())
@@ -47,6 +61,12 @@ class AnsibleModuleCompletionContributor : CompletionContributor() {
                 }
             },
         )
+    }
+
+    private fun isCompletingYamlKey(position: PsiElement): Boolean {
+        val keyValue = PsiTreeUtil.getParentOfType(position, YAMLKeyValue::class.java, false) ?: return false
+        val key = keyValue.key ?: return true // no key parsed yet (e.g. right after typing "- ") -> treat as key position
+        return PsiTreeUtil.isAncestor(key, position, false)
     }
 
     private fun upsellLookupElement(): LookupElementBuilder =
