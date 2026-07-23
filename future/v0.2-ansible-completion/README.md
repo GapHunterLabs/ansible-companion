@@ -94,9 +94,11 @@ reproduced here so it doesn't get lost):
 1. Inform users about the upcoming changes. (marketing, not code)
 2. Obfuscate the plugin (optional — skip).
 3. ~~Implement license verification calls.~~ **Done** — `CheckLicense.kt`.
-4. **Create an organization and add banking information** in the
-   'Vendor Information' tab. This is the real financial/legal/tax step —
-   account holder's own action, not scriptable, same as flagged before.
+4. ~~Create an organization and add banking information in the 'Vendor
+   Information' tab.~~ **Done (2026-07-23)** — Trader Details filled in
+   with banking info, document, etc. Still need to confirm plugin.xml's
+   `<vendor>` ends up matching whatever `organization_id` this created
+   (step 8 below) once that's visible on the Marketplace side.
 5. Prepare the plugin on the Marketplace demo to test changes (optional).
 6. Make changes in `plugin.xml` (see below — do this only when v0.2 ships).
 7. Set the product descriptor's `code`, `release-date`, `release-version`,
