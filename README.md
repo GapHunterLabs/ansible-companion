@@ -31,6 +31,8 @@ encriptar→desencriptar sobre un editor de verdad.
 
 ## Uso
 
+![Encriptar y desencriptar un valor de Ansible Vault directo en el editor](docs/vault-demo.gif)
+
 Seleccioná texto en el editor → clic derecho:
 - **Encrypt Selection as Ansible Vault** — pide un password, reemplaza la
   selección con un bloque `$ANSIBLE_VAULT;1.1;AES256`.

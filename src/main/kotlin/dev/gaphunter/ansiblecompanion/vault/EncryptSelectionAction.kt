@@ -10,15 +10,15 @@ class EncryptSelectionAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
         if (editor.selectionModel.selectedText.isNullOrEmpty()) {
-            Messages.showWarningDialog("Seleccioná el texto que querés encriptar primero.", "Ansible Vault")
+            Messages.showWarningDialog("Select the text you want to encrypt first.", "Ansible Vault")
             return
         }
 
-        val dialog = VaultPasswordDialog("Encriptar como Ansible Vault")
+        val dialog = VaultPasswordDialog("Encrypt as Ansible Vault")
         if (!dialog.showAndGet()) return
         val password = String(dialog.password())
         if (password.isEmpty()) {
-            Messages.showWarningDialog("El password no puede estar vacío.", "Ansible Vault")
+            Messages.showWarningDialog("Password cannot be empty.", "Ansible Vault")
             return
         }
 

@@ -2,6 +2,16 @@
 
 # Ansible Companion Changelog
 
+## [Unreleased]
+
+## [0.1.1]
+
+### Fixed
+
+- Los diálogos y mensajes de encriptar/desencriptar tenían texto hardcodeado en
+  español, inconsistente con el resto de la UI del plugin (en inglés). Ahora
+  todo el texto visible al usuario está en inglés.
+
 ## [0.1.0]
 
 ### Added

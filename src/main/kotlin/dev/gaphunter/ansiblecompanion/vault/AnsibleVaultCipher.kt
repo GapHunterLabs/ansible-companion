@@ -45,12 +45,12 @@ object AnsibleVaultCipher {
     fun decrypt(vaultText: String, password: String): ByteArray {
         val lines = vaultText.trim().lines()
         if (lines.isEmpty() || !lines[0].trim().startsWith(HEADER_PREFIX)) {
-            throw VaultFormatException("no es un vault 1.1/AES256 soportado")
+            throw VaultFormatException("not a supported 1.1/AES256 vault")
         }
         val outerHex = lines.drop(1).joinToString("") { it.trim() }
         val inner = String(hexDecode(outerHex), Charsets.US_ASCII)
         val parts = inner.split("\n")
-        if (parts.size != 3) throw VaultFormatException("formato de vaulttext invalido")
+        if (parts.size != 3) throw VaultFormatException("invalid vaulttext format")
 
         val salt = hexDecode(parts[0])
         val hmacExpected = hexDecode(parts[1])
@@ -63,7 +63,7 @@ object AnsibleVaultCipher {
 
         val hmacActual = hmacSha256(key2, ciphertext)
         if (!hmacActual.contentEquals(hmacExpected)) {
-            throw VaultFormatException("password incorrecto o vault corrupto (HMAC no coincide)")
+            throw VaultFormatException("wrong password or corrupted vault (HMAC mismatch)")
         }
 
         val cipher = Cipher.getInstance("AES/CTR/NoPadding")
@@ -128,7 +128,7 @@ object AnsibleVaultCipher {
     private fun unpadPkcs7(data: ByteArray): ByteArray {
         if (data.isEmpty()) return data
         val padLen = data.last().toInt() and 0xFF
-        if (padLen <= 0 || padLen > data.size) throw VaultFormatException("padding invalido")
+        if (padLen <= 0 || padLen > data.size) throw VaultFormatException("invalid padding")
         return data.copyOfRange(0, data.size - padLen)
     }
 

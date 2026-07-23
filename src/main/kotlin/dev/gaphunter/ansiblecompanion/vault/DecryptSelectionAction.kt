@@ -12,20 +12,20 @@ class DecryptSelectionAction : AnAction() {
         val selected = editor.selectionModel.selectedText
         if (selected.isNullOrEmpty() || !AnsibleVaultCipher.looksEncrypted(selected)) {
             Messages.showWarningDialog(
-                "Seleccioná un bloque completo que empiece con \$ANSIBLE_VAULT;1.1;AES256.",
+                "Select a full block starting with \$ANSIBLE_VAULT;1.1;AES256.",
                 "Ansible Vault"
             )
             return
         }
 
-        val dialog = VaultPasswordDialog("Desencriptar Ansible Vault")
+        val dialog = VaultPasswordDialog("Decrypt Ansible Vault")
         if (!dialog.showAndGet()) return
         val password = String(dialog.password())
 
         try {
             VaultEditorOps.decryptSelection(e.project, editor, password)
         } catch (ex: AnsibleVaultCipher.VaultFormatException) {
-            Messages.showErrorDialog(ex.message ?: "no se pudo desencriptar", "Ansible Vault")
+            Messages.showErrorDialog(ex.message ?: "could not decrypt", "Ansible Vault")
         }
     }
 
