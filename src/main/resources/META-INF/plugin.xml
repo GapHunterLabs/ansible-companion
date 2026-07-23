@@ -4,14 +4,14 @@
     <name>Ansible Companion</name>
     <vendor>Gap Hunter Labs</vendor>
     <description><![CDATA[
-        <p>Encriptar y desencriptar Ansible Vault (formato 1.1/AES256) directo en el
-        editor, sin salir del IDE y sin depender de <code>ansible-vault</code> instalado
-        (reimplementado con <code>javax.crypto</code>, verificado contra el test suite
-        oficial de Ansible).</p>
-        <p>Seleccioná texto plano -> <b>Encrypt Selection as Ansible Vault</b>, o un bloque
-        <code>$ANSIBLE_VAULT;1.1;AES256</code> -> <b>Decrypt Ansible Vault Selection</b>.
-        Ambas en el menu contextual del editor. El password nunca se guarda ni se cachea.</p>
-        <p>Completado FQCN y soporte de roles llegan en una version siguiente.</p>
+        <p>Encrypt and decrypt Ansible Vault (1.1/AES256 format) directly in the editor,
+        without leaving the IDE and without depending on <code>ansible-vault</code> being
+        installed (reimplemented with <code>javax.crypto</code>, verified against the
+        official Ansible test suite).</p>
+        <p>Select plain text -> <b>Encrypt Selection as Ansible Vault</b>, or a
+        <code>$ANSIBLE_VAULT;1.1;AES256</code> block -> <b>Decrypt Ansible Vault Selection</b>.
+        Both available from the editor's context menu. The password is never saved or cached.</p>
+        <p>FQCN-aware completion and role support are coming in a future release.</p>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
@@ -21,11 +21,11 @@
             <action id="AnsibleCompanion.EncryptSelection"
                     class="dev.gaphunter.ansiblecompanion.vault.EncryptSelectionAction"
                     text="Encrypt Selection as Ansible Vault"
-                    description="Encripta el texto seleccionado como un bloque Ansible Vault 1.1/AES256"/>
+                    description="Encrypts the selected text as an Ansible Vault 1.1/AES256 block"/>
             <action id="AnsibleCompanion.DecryptSelection"
                     class="dev.gaphunter.ansiblecompanion.vault.DecryptSelectionAction"
                     text="Decrypt Ansible Vault Selection"
-                    description="Desencripta un bloque Ansible Vault 1.1/AES256 seleccionado"/>
+                    description="Decrypts a selected Ansible Vault 1.1/AES256 block"/>
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </group>
     </actions>

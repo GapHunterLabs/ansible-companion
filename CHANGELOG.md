@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.1.2]
+
+### Fixed
+
+- La descripción del plugin y las tooltips de las dos acciones (en
+  `plugin.xml`) seguían hardcodeadas en español, el mismo problema que se
+  arregló en 0.1.1 para los diálogos — ahora en inglés, consistente con el
+  resto del listing.
+
 ## [0.1.1]
 
 ### Fixed
