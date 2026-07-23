@@ -112,15 +112,44 @@ reproduced here so it doesn't get lost):
    in step 4 — may need to change from the display name "Gap Hunter Labs"
    to whatever ID the organization gets.
 9. Set up pricing, offers, and coupons (this is where the actual
-   $15-19/year price and 30-day trial get configured — apparently not
-   available until the steps above are further along, not simply a field
-   on the current page).
+   $15-19/year price and 30-day trial get configured). **Confirmed
+   2026-07-23: not available yet because both the plugin and the vendor
+   account are still under review** (per JetBrains's own
+   [Preparing your plugin for publication](https://plugins.jetbrains.com/docs/marketplace/prepare-your-plugin-for-publication.html)
+   docs) — nothing to do here but wait.
 10. Release the plugin.
+
+## `<product-descriptor>` exact rules (learned 2026-07-23, corrects an earlier guess)
+
+Read JetBrains's actual
+[required-parameters](https://plugins.jetbrains.com/docs/marketplace/add-required-parameters.html)
+and
+[versioning](https://plugins.jetbrains.com/docs/marketplace/versioning-of-paid-plugins.html)
+docs rather than guessing further:
+
+- `code`: max 15 chars, must start with `P`, ALL CAPS, no digits/symbols.
+  `[REDACTED-PRODUCT-CODE]` is exactly 15 chars and satisfies this — confirmed
+  correct, not just assigned-and-hoped.
+- `release-date`: `YYYYMMDD`.
+- `release-version`: **not just an incrementing integer** — my earlier
+  placeholder (`release-version="1"`) is invalid. Rules: at least 2
+  digits; must strictly increase across releases (never descend); its
+  first digits must align with the plugin's own `<version>` (JetBrains's
+  own example: `<version>2021.1.1</version>` pairs with
+  `release-version="20211"` — year+major concatenated, dots stripped).
+  Our `<version>` is plain semver (`0.2.0`, not calendar-based), so the
+  exact mapping isn't obvious from their examples — **decide this
+  deliberately at reactivation time** (possibly by asking
+  marketplace@jetbrains.com directly, since Support is already going to
+  be in touch about the Freemium application) rather than guessing a
+  value that could get the release rejected.
+- `optional="true"`: required for FREEMIUM (see checklist item 7 above).
 
 ## What's still pending before reactivating this in `src/main`
 
-1. Add `<product-descriptor code="[REDACTED-PRODUCT-CODE]" release-date="YYYYMMDD" release-version="1" optional="true"/>`
-   to `plugin.xml` — **do not** add this to the
+1. Add `<product-descriptor code="[REDACTED-PRODUCT-CODE]" release-date="YYYYMMDD" release-version="TBD" optional="true"/>`
+   to `plugin.xml` (see exact rules above for `release-version` —
+   don't reuse the placeholder literally) — **do not** add this to the
    live v0.1.x `plugin.xml` before v0.2 actually ships in the same
    release; it would misrepresent the currently-free vault plugin as paid.
 2. Decide the exact completion trigger (right now the contributor fires
