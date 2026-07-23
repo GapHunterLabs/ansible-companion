@@ -8,9 +8,9 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 
 /**
- * Nunca guarda ni cachea el password entre llamadas — cada encriptar/
- * desencriptar lo vuelve a pedir. Mas fricción, cero riesgo de dejar un
- * secreto en memoria mas tiempo del necesario.
+ * Never saves or caches the password between calls — every encrypt/
+ * decrypt asks for it again. More friction, zero risk of leaving a
+ * secret in memory longer than necessary.
  */
 class VaultPasswordDialog(title: String) : DialogWrapper(true) {
     private val field = JBPasswordField()

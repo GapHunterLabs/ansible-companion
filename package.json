@@ -1,7 +1,7 @@
 {
   "name": "plugin",
   "version": "1.0.0",
-  "description": "Plugin de IntelliJ/PyCharm para Ansible. Nace de evidencia real, no de suposiciones: ver `out/evidence_*.md` en la raiz del repo (generados por `pipeline/03_evidence.py --from-shortlist 8`) y el veredicto completo en la conversacion del proyecto.",
+  "description": "Local dev dependency only: pulls in @ansible/ansible-language-server for the paused future/v0.2-ansible-lsp/ work. Not part of the shipped plugin.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

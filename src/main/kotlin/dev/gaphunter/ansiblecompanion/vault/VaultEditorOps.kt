@@ -5,10 +5,10 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 
 /**
- * Logica de "aplicar el cambio al documento" separada del AnAction/dialogo
- * a proposito -> permite un test de plataforma real (VaultEditorOpsTest,
- * via CodeInsightTestFixture) sin necesidad de interceptar un dialogo
- * Swing modal en un entorno headless.
+ * "Apply the change to the document" logic kept separate from the
+ * AnAction/dialog on purpose -> enables a real platform test
+ * (VaultEditorOpsTest, via CodeInsightTestFixture) without needing to
+ * intercept a modal Swing dialog in a headless environment.
  */
 object VaultEditorOps {
 

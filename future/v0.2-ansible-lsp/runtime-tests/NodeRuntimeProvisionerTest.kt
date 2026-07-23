@@ -18,9 +18,9 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 /**
- * Prueba el flujo completo (descarga -> checksum -> extraccion -> cache)
- * contra un servidor HTTP local real, no contra nodejs.org -> rapido,
- * determinista, y no depende de tener Internet para correr los tests.
+ * Tests the full flow (download -> checksum -> extraction -> cache)
+ * against a real local HTTP server, not against nodejs.org -> fast,
+ * deterministic, and doesn't depend on having Internet to run the tests.
  */
 class NodeRuntimeProvisionerTest {
 
@@ -105,7 +105,7 @@ class NodeRuntimeProvisionerTest {
         val provisioner = NodeRuntimeProvisioner(cacheRoot)
         val artifact = NodeArtifact(
             downloadUrl = "$baseUrl/node.zip",
-            sha256 = "0".repeat(64), // deliberadamente incorrecto
+            sha256 = "0".repeat(64), // deliberately wrong
             archiveFormat = ArchiveFormat.ZIP,
             binaryPathInArchive = "node.exe",
             cachedBinaryName = "node.exe",
@@ -113,13 +113,13 @@ class NodeRuntimeProvisionerTest {
 
         try {
             provisioner.ensureProvisioned(artifact, cacheKey = "test-checksum-mismatch")
-            fail("se esperaba NodeProvisioningException por checksum invalido")
+            fail("expected a NodeProvisioningException for an invalid checksum")
         } catch (e: NodeProvisioningException) {
-            assertTrue(e.message!!.contains("Checksum"))
+            assertTrue(e.message!!.contains("checksum", ignoreCase = true))
         }
 
         val binaryPath = cacheRoot.resolve("test-checksum-mismatch").resolve("node.exe")
-        assertFalse("un archive con checksum invalido nunca debe quedar extraido en disco", Files.exists(binaryPath))
+        assertFalse("an archive with an invalid checksum must never be left extracted on disk", Files.exists(binaryPath))
     }
 
     @Test
@@ -136,7 +136,7 @@ class NodeRuntimeProvisionerTest {
 
         try {
             provisioner.ensureProvisioned(artifact, cacheKey = "test-http-404")
-            fail("se esperaba NodeProvisioningException por HTTP 404")
+            fail("expected a NodeProvisioningException for an HTTP 404")
         } catch (e: NodeProvisioningException) {
             assertTrue(e.message!!.contains("404"))
         }
@@ -157,7 +157,7 @@ class NodeRuntimeProvisionerTest {
 
         try {
             provisioner.ensureProvisioned(artifact, cacheKey = "test-missing-entry")
-            fail("se esperaba NodeProvisioningException por entry ausente")
+            fail("expected a NodeProvisioningException for a missing entry")
         } catch (e: NodeProvisioningException) {
             assertTrue(e.message!!.contains("node.exe"))
         }

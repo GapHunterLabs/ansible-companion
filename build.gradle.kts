@@ -13,11 +13,11 @@ dependencies {
     intellijPlatform {
         intellijIdea("2025.2.6.2")
 
-        // v0.1.0 es solo vault (javax.crypto puro) -> sin dependencia de
-        // YAML/LSP4IJ. Ese codigo sigue en future/v0.2-ansible-lsp/,
-        // apartado de la compilacion para que verifyPlugin no marque una
-        // referencia a clases de otro plugin sin declarar la dependencia.
-        // Ver future/v0.2-ansible-lsp/README.md para reactivarlo.
+        // v0.1.0 is vault-only (pure javax.crypto) -> no YAML/LSP4IJ
+        // dependency. That code still lives in future/v0.2-ansible-lsp/,
+        // held out of compilation so verifyPlugin doesn't flag a reference
+        // to another plugin's classes without declaring the dependency.
+        // See future/v0.2-ansible-lsp/README.md to reactivate it.
 
         testFramework(TestFrameworkType.Platform)
     }
@@ -26,20 +26,21 @@ dependencies {
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            // 243 = 2024.3, para no dejar afuera la base instalada real.
+            // 243 = 2024.3, so as not to exclude the real installed base.
             sinceBuild = "243"
-            // Sin techo: un untilBuild estrecho es la forma mas comun de morir
-            // en este marketplace (se desactiva solo en el siguiente release).
+            // No ceiling: a narrow untilBuild is the most common way to die
+            // in this marketplace (it only gets disabled on the next release).
             untilBuild = provider { null }
         }
     }
 
-    // El instrumentador de bytecode (agrega asserts de @NotNull/@Nullable en
-    // runtime) falla en esta combinacion Gradle 9.5/plugin 2.16/IDE 2025.2.6.2
-    // con "instrumentIdeaExtensions doesn't support the nested element" -> bug
-    // de tooling documentado en varias versiones del plugin, no de este codigo
-    // (compileKotlin/compileTestKotlin compilan bien). No es requerido para
-    // build/test/verifyPlugin; reactivar si una version futura del plugin lo
-    // arregla y se quiere el chequeo extra en runtime.
+    // The bytecode instrumenter (adds @NotNull/@Nullable asserts at
+    // runtime) fails on this Gradle 9.5/plugin 2.16/IDE 2025.2.6.2
+    // combination with "instrumentIdeaExtensions doesn't support the
+    // nested element" -> a tooling bug documented across several plugin
+    // versions, not our code's fault (compileKotlin/compileTestKotlin
+    // compile fine). Not required for build/test/verifyPlugin; reactivate
+    // if a future plugin version fixes it and the extra runtime check is
+    // wanted.
     instrumentCode = false
 }

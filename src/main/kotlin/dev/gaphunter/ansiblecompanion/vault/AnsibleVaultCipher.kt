@@ -7,28 +7,28 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 /**
- * "No romper" #1 del veredicto: edicion de vault integrada, incluyendo
- * ANSIBLE_VAULT_PASSWORD_FILE como script (ver Ansible Vault Editor,
- * out/evidence_14278.md, 86% de resenas >=4 estrellas — el mas valorado
- * de los cuatro incumbentes).
+ * Verdict's "don't break" #1: integrated vault editing, including
+ * ANSIBLE_VAULT_PASSWORD_FILE as a script (see Ansible Vault Editor,
+ * out/evidence_14278.md, 86% reviews >=4 stars — the most valued of the
+ * four incumbents).
  *
- * Reimplementa el formato 1.1/AES256 con javax.crypto (JDK, sin
- * dependencias nuevas) en vez de invocar `ansible-vault` por linea de
- * comandos. Se decidio asi porque Ansible NO corre en Windows nativo
- * (ansible-core falla al importar `fcntl`/`os.get_blocking` fuera de
- * POSIX) y buena parte de los usuarios reales de este plugin van a estar
- * en IntelliJ/PyCharm sobre Windows exactamente por eso.
+ * Reimplements the 1.1/AES256 format with javax.crypto (JDK, no new
+ * dependencies) instead of shelling out to the `ansible-vault` CLI.
+ * Decided this way because Ansible does NOT run on native Windows
+ * (ansible-core fails to import `fcntl`/`os.get_blocking` outside POSIX)
+ * and a good share of this plugin's real users will be on IntelliJ/
+ * PyCharm on Windows precisely because of that.
  *
- * PBKDF2 esta reimplementado a mano (RFC 2898) en vez de usar
- * javax.crypto.spec.PBEKeySpec: la implementacion del JDK codifica el
- * password char[] con una convencion propia (no UTF-8 garantizado), lo
- * que rompe compatibilidad con contrasenas no-ASCII frente al
- * `cryptography` de Python que usa Ansible. Aqui el password entra como
- * bytes UTF-8 explicitos, byte a byte igual que la referencia.
+ * PBKDF2 is hand-reimplemented (RFC 2898) instead of using
+ * javax.crypto.spec.PBEKeySpec: the JDK's implementation encodes the
+ * password char[] with its own convention (not guaranteed UTF-8), which
+ * breaks compatibility with non-ASCII passwords against the Python
+ * `cryptography` library Ansible uses. Here the password goes in as
+ * explicit UTF-8 bytes, byte-for-byte matching the reference.
  *
- * Verificado contra un vector de prueba real tomado del propio test
- * suite de ansible/ansible (test/units/parsing/vault/test_vault.py) —
- * ver AnsibleVaultCipherTest.
+ * Verified against a real test vector taken from ansible/ansible's own
+ * test suite (test/units/parsing/vault/test_vault.py) — see
+ * AnsibleVaultCipherTest.
  */
 object AnsibleVaultCipher {
     private const val HEADER_PREFIX = "\$ANSIBLE_VAULT;1.1;AES256"
@@ -87,7 +87,7 @@ object AnsibleVaultCipher {
         return HEADER_PREFIX + "\n" + outerHex.chunked(LINE_WRAP).joinToString("\n")
     }
 
-    // -- primitivas --------------------------------------------------------
+    // -- primitives ----------------------------------------------------------
 
     private fun pbkdf2HmacSha256(password: ByteArray, salt: ByteArray, iterations: Int, keyLenBytes: Int): ByteArray {
         val numBlocks = (keyLenBytes + HMAC_LEN - 1) / HMAC_LEN
@@ -134,7 +134,7 @@ object AnsibleVaultCipher {
 
     private fun hexDecode(s: String): ByteArray {
         val clean = s.trim()
-        require(clean.length % 2 == 0) { "hex de largo impar" }
+        require(clean.length % 2 == 0) { "hex string has odd length" }
         return ByteArray(clean.length / 2) { i ->
             ((Character.digit(clean[i * 2], 16) shl 4) + Character.digit(clean[i * 2 + 1], 16)).toByte()
         }

@@ -113,7 +113,7 @@ class ArchiveExtractorTest {
         val name: String,
         val typeflag: Char,
         val content: ByteArray,
-        /** Cuando typeflag=='L', el contenido real a escribir es este nombre largo, no `content`. */
+        /** When typeflag=='L', the actual content to write is this long name, not `content`. */
         val gnuLongNamePayload: String? = null,
     )
 
@@ -124,7 +124,7 @@ class ArchiveExtractorTest {
             raw.write(tarHeader(entry.name, body.size, entry.typeflag))
             if (body.isNotEmpty()) raw.write(padTo512(body))
         }
-        raw.write(ByteArray(1024)) // dos bloques cero = marca de fin de archive
+        raw.write(ByteArray(1024)) // two zero blocks = end-of-archive marker
         val gz = ByteArrayOutputStream()
         GZIPOutputStream(gz).use { it.write(raw.toByteArray()) }
         return gz.toByteArray()
@@ -135,16 +135,17 @@ class ArchiveExtractorTest {
         fun writeField(offset: Int, value: ByteArray) {
             System.arraycopy(value, 0, header, offset, minOf(value.size, header.size - offset))
         }
-        // Nombres largos (>100 bytes) no caben en el campo `name` normal -> el propio
-        // formato ustar espera que en ese caso se use la extension GNU 'L', asi que
-        // truncar aca es intencional (el effective name real lo aporta el 'L' anterior).
+        // Long names (>100 bytes) don't fit in the normal `name` field -> the ustar
+        // format itself expects the GNU 'L' extension to be used in that case, so
+        // truncating here is intentional (the real effective name comes from the
+        // preceding 'L' entry).
         writeField(0, name.toByteArray(Charsets.UTF_8).copyOf(100))
         writeField(100, "0000644".toByteArray(Charsets.US_ASCII) + byteArrayOf(0)) // mode
         writeField(108, "0000000".toByteArray(Charsets.US_ASCII) + byteArrayOf(0)) // uid
         writeField(116, "0000000".toByteArray(Charsets.US_ASCII) + byteArrayOf(0)) // gid
         writeField(124, String.format("%011o", size).toByteArray(Charsets.US_ASCII) + byteArrayOf(0)) // size
         writeField(136, "00000000000".toByteArray(Charsets.US_ASCII) + byteArrayOf(0)) // mtime
-        for (i in 148 until 156) header[i] = ' '.code.toByte() // checksum field = espacios mientras se suma
+        for (i in 148 until 156) header[i] = ' '.code.toByte() // checksum field = spaces while summing
         header[156] = typeflag.code.toByte()
         writeField(257, "ustar".toByteArray(Charsets.US_ASCII) + byteArrayOf(0)) // magic
         writeField(263, "00".toByteArray(Charsets.US_ASCII)) // version

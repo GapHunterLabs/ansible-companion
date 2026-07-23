@@ -1,31 +1,32 @@
 package dev.gaphunter.ansiblecompanion.runtime
 
 /**
- * Ansible no corre en Windows nativo (ver AnsibleVaultCipher/ARCHITECTURE.md),
- * asi que "instala Node tu mismo" tampoco es una salida aceptable para buena
- * parte de los usuarios reales de este plugin -> en vez de asumir `node` en
- * el PATH, se descarga y cachea un runtime de Node privado por usuario
- * (NodeRuntimeProvisioner), un patron ya usado por varios plugins de
- * IntelliJ que envuelven herramientas externas (ej. Rust/rust-analyzer).
+ * Ansible doesn't run on native Windows (see AnsibleVaultCipher/
+ * ARCHITECTURE.md), so "just install Node yourself" isn't an acceptable
+ * way out for a good share of this plugin's real users either -> instead
+ * of assuming `node` is on the PATH, a private per-user Node runtime is
+ * downloaded and cached (NodeRuntimeProvisioner), a pattern already used
+ * by several IntelliJ plugins that wrap external tools (e.g. Rust/
+ * rust-analyzer).
  *
- * Bundlear el binario de Node para TODAS las plataformas dentro del .zip
- * del plugin no es viable: cada binario pesa ~80-110MB y no hay forma de
- * publicar un solo artifact por-plataforma en el Marketplace, asi que
- * bundlear las 6 combinaciones infla el plugin a ~500MB+ para una feature
- * que la mayoria de instalaciones ni va a tocar en el mismo dia. Descargar
- * bajo demanda, verificado por checksum, es la unica opcion que mantiene el
- * .zip liviano.
+ * Bundling the Node binary for ALL platforms inside the plugin's .zip
+ * isn't viable: each binary weighs ~80-110MB and there's no way to
+ * publish a single per-platform artifact on the Marketplace, so bundling
+ * all 6 combinations would balloon the plugin to ~500MB+ for a feature
+ * most installs won't even touch the same day. Downloading on demand,
+ * checksum-verified, is the only option that keeps the .zip light.
  *
- * El servidor de lenguaje (`@ansible/ansible-language-server` + su arbol de
- * dependencias, ~16MB) SI se bundlea directo en el plugin -> confirmado a
- * mano que no tiene addons nativos (`find node_modules -name "*.node"` vacio),
- * es JS puro, portable entre sistemas operativos sin recompilar.
+ * The language server (`@ansible/ansible-language-server` + its
+ * dependency tree, ~16MB) DOES get bundled directly in the plugin ->
+ * confirmed by hand that it has no native addons
+ * (`find node_modules -name "*.node"` comes back empty), it's pure JS,
+ * portable across operating systems without recompiling.
  */
 enum class NodePlatform(
     val distSuffix: String,
     val archiveFormat: ArchiveFormat,
     val sha256: String,
-    /** Ruta del binario `node`/`node.exe` dentro del arbol ya descomprimido del archive. */
+    /** Path to the `node`/`node.exe` binary inside the already-extracted archive tree. */
     val binaryPathInArchive: String,
 ) {
     WINDOWS_X64(
@@ -65,21 +66,21 @@ enum class NodePlatform(
         binaryPathInArchive = "bin/node",
     );
 
-    /** Nombre del binario ya extraido y cacheado (sin el resto del arbol de Node). */
+    /** Name of the already-extracted, cached binary (without the rest of the Node tree). */
     val cachedBinaryName: String
         get() = if (this == WINDOWS_X64 || this == WINDOWS_ARM64) "node.exe" else "node"
 
     companion object {
-        /** Version de Node pineada -> checksums arriba corresponden exactamente a esta. */
+        /** Pinned Node version -> the checksums above correspond exactly to this one. */
         const val NODE_VERSION = "24.18.0"
 
         fun downloadUrl(platform: NodePlatform): String =
             "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-${platform.distSuffix}"
 
         /**
-         * Deteccion inyectable (no lee System.getProperty directo) para poder
-         * testear las 6 combinaciones sin depender del sistema operativo que
-         * de casualidad este corriendo el test.
+         * Injectable detection (doesn't read System.getProperty directly) so
+         * all 6 combinations can be tested without depending on whichever
+         * OS happens to be running the test.
          */
         fun detect(osName: String, osArch: String): NodePlatform? {
             val os = osName.lowercase()

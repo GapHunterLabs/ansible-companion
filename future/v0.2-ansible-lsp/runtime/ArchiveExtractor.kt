@@ -8,26 +8,28 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.ZipInputStream
 
 /**
- * Extrae UN solo archivo de un .zip o .tar.gz sin descomprimir el resto del
- * arbol -> el runtime de Node completo pesa ~150-200MB descomprimido, pero
- * lo unico que este plugin necesita es el binario `node`/`node.exe` (un
- * unico archivo dentro del tar/zip). Extraer solo eso deja el cache en
- * ~80-110MB en vez de duplicar npm/docs/headers que nunca se usan.
+ * Extracts a SINGLE file from a .zip or .tar.gz without decompressing the
+ * rest of the tree -> the full Node runtime weighs ~150-200MB decompressed,
+ * but the only thing this plugin needs is the `node`/`node.exe` binary (a
+ * single file inside the tar/zip). Extracting just that keeps the cache
+ * at ~80-110MB instead of duplicating npm/docs/headers that never get used.
  *
- * El .tar.gz no tiene una libreria en la stdlib de Java (a diferencia de
- * .zip, que si tiene `java.util.zip.ZipInputStream`) -> se implementa un
- * lector TAR minimo (formato ustar/GNU) a mano en vez de agregar Apache
- * Commons Compress como dependencia nueva, mismo criterio que
- * AnsibleVaultCipher (PBKDF2 a mano en vez de una libreria).
+ * .tar.gz has no library in the Java stdlib (unlike .zip, which does have
+ * `java.util.zip.ZipInputStream`) -> a minimal TAR reader (ustar/GNU
+ * format) is hand-written instead of adding Apache Commons Compress as a
+ * new dependency, the same call as AnsibleVaultCipher (hand-rolled PBKDF2
+ * instead of a library).
  */
 object ArchiveExtractor {
 
     /**
-     * @param matcher recibe el path del entry TAL COMO aparece en el archive
-     *   (incluyendo el folder versionado de primer nivel, ej.
-     *   "node-v24.18.0-linux-x64/bin/node") y decide si es el que se busca.
-     * @return true si se encontro y extrajo el entry; false si se agoto el
-     *   archive sin encontrar ningun match (el caller decide si eso es error).
+     * @param matcher receives the entry's path EXACTLY AS IT APPEARS in the
+     *   archive (including the top-level versioned folder, e.g.
+     *   "node-v24.18.0-linux-x64/bin/node") and decides whether it's the one
+     *   being looked for.
+     * @return true if the entry was found and extracted; false if the
+     *   archive was exhausted without any match (the caller decides
+     *   whether that's an error).
      */
     fun extractSingleFile(
         archiveFile: Path,
@@ -59,7 +61,7 @@ object ArchiveExtractor {
         return false
     }
 
-    // -- TAR (ustar/GNU) minimo: solo lo necesario para ubicar y copiar un entry ------
+    // -- minimal TAR (ustar/GNU): only what's needed to locate and copy one entry ------
 
     private const val BLOCK_SIZE = 512
 
@@ -69,14 +71,14 @@ object ArchiveExtractor {
 
         while (true) {
             if (!readFully(input, header)) return false
-            if (header.all { it == 0.toByte() }) return false // bloque cero = fin de archive
+            if (header.all { it == 0.toByte() }) return false // zero block = end of archive
 
             val typeflag = header[156].toInt().toChar()
             val size = parseOctal(header, 124, 12)
             val paddedSize = ((size + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE
 
             if (typeflag == 'L') {
-                // Extension GNU: el contenido de este entry es el nombre largo del PROXIMO header.
+                // GNU extension: this entry's content is the long name for the NEXT header.
                 val nameBytes = ByteArray(size.toInt())
                 readFully(input, nameBytes)
                 skipExactly(input, paddedSize - size)
@@ -117,7 +119,7 @@ object ArchiveExtractor {
         var read = 0
         while (read < buffer.size) {
             val n = input.read(buffer, read, buffer.size - read)
-            if (n < 0) return read > 0 // EOF a mitad de bloque -> archive truncado, tratar como fin
+            if (n < 0) return read > 0 // EOF mid-block -> truncated archive, treat as end
             read += n
         }
         return true

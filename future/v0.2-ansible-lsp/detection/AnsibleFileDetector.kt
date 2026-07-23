@@ -1,13 +1,13 @@
 package dev.gaphunter.ansiblecompanion.detection
 
 /**
- * Responde la queja #1 de out/evidence_7792.md: el plugin gratis lider
- * reclama TODO archivo .yml/.yaml como Ansible y rompe Kubernetes, Helm,
- * Cloudformation y Docker-compose en el proceso.
+ * Addresses complaint #1 from out/evidence_7792.md: the leading free
+ * plugin claims EVERY .yml/.yaml file as Ansible and breaks Kubernetes,
+ * Helm, Cloudformation, and Docker-compose in the process.
  *
- * Logica pura y testeable a proposito (sin VirtualFile/PSI) para que se
- * pueda validar con JUnit normal sin levantar la plataforma. Conectada a
- * la plataforma real via AnsibleFileTypeOverrider.
+ * Pure, deliberately testable logic (no VirtualFile/PSI) so it can be
+ * validated with plain JUnit without spinning up the platform. Wired to
+ * the real platform via AnsibleFileTypeOverrider.
  */
 object AnsibleFileDetector {
 
@@ -21,7 +21,7 @@ object AnsibleFileDetector {
         return pathSignalsAnsible(normalized) || contentSignalsAnsible(content)
     }
 
-    /** Chequeo sin I/O, para que el overrider evite leer el archivo cuando la ruta ya alcanza. */
+    /** I/O-free check, so the overrider can skip reading the file when the path alone is already enough. */
     fun pathAloneSignalsAnsible(path: String): Boolean {
         val normalized = path.replace('\\', '/')
         if (!normalized.endsWith(".yml") && !normalized.endsWith(".yaml")) return false

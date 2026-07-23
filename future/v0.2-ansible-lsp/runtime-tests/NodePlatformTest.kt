@@ -44,8 +44,8 @@ class NodePlatformTest {
 
     @Test
     fun thirtyTwoBitWindowsReturnsNull() {
-        // No hay entry para win32 -> caer con null (y un mensaje claro en el
-        // caller) es mejor que descargar el binario equivocado.
+        // There's no entry for win32 -> falling back to null (and a clear
+        // message in the caller) is better than downloading the wrong binary.
         assertNull(NodePlatform.detect("Windows 10", "x86"))
     }
 

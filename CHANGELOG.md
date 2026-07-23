@@ -8,36 +8,38 @@
 
 ### Fixed
 
-- La descripción del plugin y las tooltips de las dos acciones (en
-  `plugin.xml`) seguían hardcodeadas en español, el mismo problema que se
-  arregló en 0.1.1 para los diálogos — ahora en inglés, consistente con el
-  resto del listing.
+- The plugin description and both action tooltips (in `plugin.xml`) were
+  still hardcoded in Spanish, the same issue fixed in 0.1.1 for the
+  dialogs — now in English, consistent with the rest of the listing.
 
 ## [0.1.1]
 
 ### Fixed
 
-- Los diálogos y mensajes de encriptar/desencriptar tenían texto hardcodeado en
-  español, inconsistente con el resto de la UI del plugin (en inglés). Ahora
-  todo el texto visible al usuario está en inglés.
+- The encrypt/decrypt dialogs and messages had hardcoded Spanish text,
+  inconsistent with the rest of the plugin's UI (English). All
+  user-visible text is now in English.
 
 ## [0.1.0]
 
 ### Added
 
-- Encriptar/desencriptar Ansible Vault (1.1/AES256) sobre la selección del editor,
-  vía el menú contextual. Implementación propia con `javax.crypto` (sin `ansible-vault`
-  instalado, sin dependencias nuevas) — verificada contra el vector de prueba real de
-  `ansible/ansible` (`test/units/parsing/vault/test_vault.py`).
-- `sinceBuild=243`, `untilBuild` abierto — evita la muerte por untilBuild estrecho.
+- Encrypt/decrypt Ansible Vault (1.1/AES256) on the editor selection, via
+  the context menu. Own implementation with `javax.crypto` (no
+  `ansible-vault` installed, no new dependencies) — verified against the
+  real test vector from `ansible/ansible`
+  (`test/units/parsing/vault/test_vault.py`).
+- `sinceBuild=243`, open `untilBuild` — avoids dying from a narrow
+  `untilBuild`.
 
-### En pausa para 0.2.0
+### On hold for 0.2.0
 
-Ver `future/v0.2-ansible-lsp/README.md`. Bloqueador real: empaquetar Node +
-`ansible-language-server` dentro del plugin (Ansible no corre en Windows nativo,
-así que pedirle al usuario que lo instale no es una salida).
+See `future/v0.2-ansible-lsp/README.md`. Real blocker: bundling Node +
+`ansible-language-server` inside the plugin (Ansible doesn't run on native
+Windows, so asking the user to install it isn't a way out).
 
-- Completado consciente de FQCN (`ansible.builtin.*`).
-- Parseo correcto de Jinja2 dentro de YAML.
-- Detección de tipo de archivo que no secuestra YAML de Kubernetes/Helm/Docker-compose.
-- Soporte de roles, preview de variables multi-entorno.
+- FQCN-aware completion (`ansible.builtin.*`).
+- Correct Jinja2 parsing inside YAML.
+- File-type detection that doesn't hijack Kubernetes/Helm/Docker-compose
+  YAML.
+- Role support, multi-environment variable preview.

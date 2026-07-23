@@ -7,14 +7,14 @@ import com.intellij.openapi.vfs.VirtualFile
 private const val HEAD_BYTES = 4096
 
 /**
- * Punto de conexion real de la queja #1: sin esto, cualquier .yml/.yaml
- * queda como YAML plano y el language server de Ansible nunca se activa
- * de forma selectiva (que es justo el bug que hunde a "YAML/Ansible
- * support", ver out/evidence_7792.md).
+ * The real connection point for complaint #1: without this, any
+ * .yml/.yaml stays plain YAML and the Ansible language server never
+ * activates selectively (which is exactly the bug that sinks "YAML/
+ * Ansible support", see out/evidence_7792.md).
  *
- * Evita leer el archivo cuando la ruta sola ya alcanza (dentro de roles,
- * subcarpeta tasks/handlers/etc., o de playbooks/) — solo lee las primeras
- * bytes para el caso ambiguo.
+ * Avoids reading the file when the path alone is already enough (inside
+ * roles, a tasks/handlers/etc. subfolder, or playbooks/) — only reads the
+ * first bytes for the ambiguous case.
  */
 class AnsibleFileTypeOverrider : FileTypeOverrider {
     override fun getOverriddenFileType(file: VirtualFile): FileType? {

@@ -1,109 +1,111 @@
-# v0.2.0 — FQCN + Jinja2 + scope de YAML (en pausa)
+# v0.2.0 — FQCN + Jinja2 + YAML scope (on hold)
 
-Este codigo compila y sus tests pasan (9/9 al momento de apartarlo — mas
-23/23 nuevos de `runtime/`, ver abajo), pero se saco de `src/main/kotlin`
-para que v0.1.x (solo vault) no dependa de LSP4IJ ni del plugin de YAML —
-asi `verifyPlugin` no marca una referencia a clases de otro plugin sin
-declarar la dependencia.
+This code compiles and its tests pass (9/9 when it was set aside — plus
+23/23 new ones in `runtime/`, see below), but it was pulled out of
+`src/main/kotlin` so that v0.1.x (vault-only) doesn't depend on LSP4IJ or
+the YAML plugin — that way `verifyPlugin` doesn't flag a reference to
+another plugin's classes without declaring the dependency.
 
-## Bloqueador de Node — RESUELTO (2026-07-23)
+## Node bundling blocker — SOLVED (2026-07-23)
 
-El bloqueador real que mantenia esto en pausa (ver ARCHITECTURE.md, sección 2)
-era **empaquetar Node + `@ansible/ansible-language-server` dentro del
-plugin**, sin pedirle al usuario que instale nada — Ansible tampoco corre en
-Windows nativo (confirmado a mano: falla al importar `fcntl`), asi que "instala
-Node/Ansible tu mismo" no es una salida para buena parte de los usuarios reales.
+The real blocker keeping this on hold (see ARCHITECTURE.md, section 2) was
+**bundling Node + `@ansible/ansible-language-server` inside the plugin**,
+without asking the user to install anything — Ansible doesn't run on
+native Windows either (confirmed by hand: fails to import `fcntl`), so
+"just install Node/Ansible yourself" isn't a way out for a good share of
+real users.
 
-Diagnostico clave: el paquete del language server + todo su arbol de
-dependencias (`@flatten-js/interval-tree`, `antsibull-docs` —una
-reimplementacion en TypeScript, no shell-out a Python—, `axios`, `glob`,
-`vscode-languageserver`, etc.) pesa **~16MB y es 100% JS puro, sin addons
-nativos** (`find node_modules -name "*.node"` vacio) — eso SI se puede
-bundlear directo dentro del plugin sin problema de portabilidad entre
-sistemas operativos.
+Key diagnosis: the language server package plus its entire dependency tree
+(`@flatten-js/interval-tree`, `antsibull-docs` — a TypeScript
+reimplementation, not a Python shell-out — `axios`, `glob`,
+`vscode-languageserver`, etc.) is **~16MB and 100% pure JS, with no native
+addons** (`find node_modules -name "*.node"` comes back empty) — that part
+CAN be bundled directly inside the plugin with no cross-platform
+portability problem.
 
-Lo que NO se puede bundlear igual es el binario de **Node** en si: es nativo
-y distinto por plataforma+arquitectura (win/linux/mac × x64/arm64 = 6
-combinaciones, ~80-110MB cada una sin comprimir) — meter las 6 en el mismo
-`.zip` infla el plugin a 500MB+ para una feature que la mayoria de
-instalaciones no usa el mismo dia que instalan. La solucion, y el patron que
-ya usan otros plugins de IntelliJ que envuelven herramientas externas (ej.
-Rust/rust-analyzer): **descargar y cachear un runtime de Node privado por
-usuario, la primera vez que se necesita, verificado por checksum antes de
-tocar el contenido.**
+What can't be bundled the same way is the **Node binary** itself: it's
+native and different per platform+architecture (win/linux/mac × x64/arm64
+= 6 combinations, ~80-110MB each uncompressed) — packing all 6 into the
+same `.zip` would balloon the plugin to 500MB+ for a feature most
+installs won't touch the same day they install it. The solution, and the
+pattern other IntelliJ plugins that wrap external tools already use (e.g.
+Rust/rust-analyzer): **download and cache a private per-user Node runtime
+the first time it's needed, verified by checksum before touching its
+contents.**
 
-### `runtime/` — implementado, testeado, y verificado contra nodejs.org real
+### `runtime/` — implemented, tested, and verified against the real nodejs.org
 
-| Archivo | Que hace |
+| File | What it does |
 |---|---|
-| `NodePlatform.kt` | Deteccion de plataforma (inyectable, testeable sin depender del OS que corre el test) + tabla de URL/checksum SHA-256 pineados a mano para Node **v24.18.0** (LTS "Krypton"), las 6 combinaciones win/linux/mac × x64/arm64. |
-| `ArchiveExtractor.kt` | Extrae **un solo archivo** (el binario `node`/`node.exe`) de un `.zip` o `.tar.gz` sin descomprimir el resto del arbol (npm/docs/headers que nunca se usan) — reader de TAR (ustar + extension GNU de nombre largo) escrito a mano en vez de agregar Apache Commons Compress como dependencia nueva (mismo criterio que `AnsibleVaultCipher`: PBKDF2 a mano en vez de una libreria). |
-| `NodeRuntimeProvisioner.kt` | Orquesta: si ya esta cacheado y verificado, devolver esa ruta; si no, descargar a un archivo temporal → **verificar SHA-256 antes de extraer o ejecutar nada** → extraer solo el binario → marcar `.provisioned` → limpiar el archive temporal. Nunca confia en contenido sin verificar. |
+| `NodePlatform.kt` | Platform detection (injectable, testable without depending on whatever OS runs the test) + a hand-pinned URL/SHA-256-checksum table for Node **v24.18.0** (LTS "Krypton"), all 6 win/linux/mac × x64/arm64 combinations. |
+| `ArchiveExtractor.kt` | Extracts **a single file** (the `node`/`node.exe` binary) from a `.zip` or `.tar.gz` without decompressing the rest of the tree (npm/docs/headers that never get used) — a hand-written TAR reader (ustar + the GNU long-name extension) instead of adding Apache Commons Compress as a new dependency (same call as `AnsibleVaultCipher`: hand-rolled PBKDF2 instead of a library). |
+| `NodeRuntimeProvisioner.kt` | Orchestrates: if already cached and verified, return that path; otherwise download to a temp file → **verify SHA-256 before extracting or running anything** → extract only the binary → mark `.provisioned` → clean up the temp archive. Never trusts unverified content. |
 
-`runtime-tests/` — 23 tests JUnit, todos pasando: deteccion de plataforma,
-extraccion de zip/tar.gz (incluyendo el caso de nombre largo GNU y "entry no
-encontrado"), y el flujo completo de `NodeRuntimeProvisioner` contra un
-servidor HTTP local real (`com.sun.net.httpserver.HttpServer`, sin red real,
-sin depender de los checksums verdaderos de Node que por diseño no se pueden
-falsificar en un test) — cubre happy path, cache-hit en la segunda llamada,
-checksum invalido (no debe dejar nada extraido en disco), HTTP 404, y entry
-ausente dentro de un archive por lo demas valido.
+`runtime-tests/` — 23 JUnit tests, all passing: platform detection, zip/
+tar.gz extraction (including the GNU long-filename case and "entry not
+found"), and the full `NodeRuntimeProvisioner` flow against a real local
+HTTP server (`com.sun.net.httpserver.HttpServer`, no real network, and not
+dependent on Node's real checksums, which by design can't be faked in a
+test) — covers the happy path, cache-hit on the second call, invalid
+checksum (must leave nothing extracted on disk), HTTP 404, and a missing
+entry inside an otherwise valid archive.
 
-**Ademas verificado a mano, una vez, contra la red real** (no es parte del
-test suite automatizado — descarga ~90MB real, no es apto para CI): un
-`main()` de humo (`SmokeTestMain.kt`, no incluido aca a proposito — vivio
-solo en un proyecto Gradle descartable en el scratchpad de la sesion que
-escribio esto) hizo `NodePlatform.detect()` sobre el `os.name`/`os.arch` real
-de la maquina, descargo `node-v24.18.0-win-x64.zip` de `nodejs.org` de
-verdad, verifico su SHA-256 contra el pineado, extrajo solo `node.exe`
-(92 534 088 bytes — el binario solo, no el arbol completo), lo corrio con
-`--version` y confirmo `v24.18.0`, y confirmo que una segunda llamada usa el
-cache (1ms vs ~8s la primera). Para reproducirlo: crear un proyecto Gradle
-Kotlin standalone con estos 3 archivos + un `main()` que llame
-`NodeRuntimeProvisioner(tempDir).ensureProvisioned(platform)` y ejecute el
-binario resultante con `--version`.
+**Also manually verified once against the real network** (not part of the
+automated test suite — downloads a real ~90MB, not CI-appropriate): a
+smoke-test `main()` (`SmokeTestMain.kt`, deliberately not included here —
+it only ever lived in a throwaway Gradle project in the scratchpad of the
+session that wrote this) ran `NodePlatform.detect()` against the machine's
+real `os.name`/`os.arch`, downloaded the real `node-v24.18.0-win-x64.zip`
+from `nodejs.org`, verified its SHA-256 against the pinned value, extracted
+only `node.exe` (92,534,088 bytes — the binary alone, not the full tree),
+ran it with `--version` and confirmed `v24.18.0`, and confirmed a second
+call uses the cache (1ms vs ~8s the first time). To reproduce: create a
+standalone Kotlin Gradle project with these 3 files plus a `main()` that
+calls `NodeRuntimeProvisioner(tempDir).ensureProvisioned(platform)` and
+runs the resulting binary with `--version`.
 
-`AnsibleLanguageServer.kt`/`AnsibleLanguageServerFactory.kt` ya estan
-actualizados para usar el provisioner (via `PathManager.getSystemPath()` como
-cache root) en vez de asumir `node` en el PATH del sistema.
+`AnsibleLanguageServer.kt`/`AnsibleLanguageServerFactory.kt` are already
+updated to use the provisioner (via `PathManager.getSystemPath()` as the
+cache root) instead of assuming `node` is on the system PATH.
 
-### Lo que SIGUE pendiente antes de reactivar esto en `src/main`
+### What's still pending before reactivating this in `src/main`
 
-**Bundlear el language server (JS puro, ~16MB) dentro del `.zip` del
-plugin.** Hoy `AnsibleLanguageServerFactory` sigue apuntando a
-`node_modules/@ansible/ansible-language-server/...` (una ruta de desarrollo,
-relativa al working directory de `runIde`, que solo resuelve por casualidad
-en el sandbox). Plan concreto para la proxima sesion que toque esto:
+**Bundle the language server (pure JS, ~16MB) inside the plugin's `.zip`.**
+Today `AnsibleLanguageServerFactory` still points at
+`node_modules/@ansible/ansible-language-server/...` (a development-only
+path, relative to `runIde`'s working directory, that only happens to
+resolve in the sandbox). Concrete plan for whoever picks this up next:
 
-1. Agregar una `Copy` task de Gradle en `build.gradle.kts` que corra
-   (o dependa de) `npm install --omit=dev` en un directorio de build, y
-   copie `node_modules/@ansible/ansible-language-server/` completo (con su
-   arbol de dependencias resuelto) a algo como
+1. Add a Gradle `Copy` task in `build.gradle.kts` that runs (or depends
+   on) `npm install --omit=dev` into a build directory, and copies the
+   full `node_modules/@ansible/ansible-language-server/` (with its
+   resolved dependency tree) to something like
    `build/bundled-lsp/ansible-language-server/`.
-2. Incluir ese directorio en el `.zip` final — el plugin gradle de IntelliJ
-   permite agregar archivos sueltos al artifact via el bloque
-   `intellijPlatform.pluginConfiguration` o directamente ajustando la tarea
-   `buildPlugin`/`prepareSandbox` para copiar ese folder dentro de
-   `lib/` o una carpeta hermana del jar (a diferenciar de "resource dentro
-   del jar", que NO sirve aca porque Node necesita archivos reales en disco,
-   no entries de un `.jar`).
-3. En `AnsibleLanguageServerFactory`, resolver la ruta al `server.js`
-   empaquetado relativa a la instalacion del plugin (ej.
-   `PluginManagerCore.getPlugin(pluginId)?.pluginPath`), no a un
-   `node_modules/` de desarrollo.
-4. Confirmar con `verifyPlugin` que el .zip final trae esos archivos y que
-   el tamaño total sigue siendo razonable (~16MB adicionales, nada parecido
-   a los 500MB+ que hubiera costado bundlear Node mismo).
+2. Include that directory in the final `.zip` — the IntelliJ Gradle
+   plugin allows adding loose files to the artifact via the
+   `intellijPlatform.pluginConfiguration` block, or by directly adjusting
+   the `buildPlugin`/`prepareSandbox` task to copy that folder into `lib/`
+   or a sibling folder of the jar (as opposed to "a resource inside the
+   jar", which does NOT work here because Node needs real files on disk,
+   not `.jar` entries).
+3. In `AnsibleLanguageServerFactory`, resolve the path to the bundled
+   `server.js` relative to the plugin's own installation (e.g.
+   `PluginManagerCore.getPlugin(pluginId)?.pluginPath`), not to a
+   development-only `node_modules/`.
+4. Confirm with `verifyPlugin` that the final `.zip` carries those files
+   and that the total size stays reasonable (~16MB extra, nowhere near
+   the 500MB+ bundling Node itself would have cost).
 
-## Para reactivar (una vez resuelto el bundling de arriba)
+## To reactivate (once the bundling above is solved)
 
-1. Mover `detection/`, `lsp/`, y `runtime/` de vuelta a
-   `src/main/kotlin/dev/gaphunter/ansiblecompanion/`, y `detection-tests/` +
-   `runtime-tests/` a `src/test/kotlin/dev/gaphunter/ansiblecompanion/...`.
-2. Devolver a `build.gradle.kts`: `bundledPlugin("org.jetbrains.plugins.yaml")`
-   y `plugin("com.redhat.devtools.lsp4ij", "0.20.1")` (o version vigente),
-   mas la `Copy` task del language server (ver arriba).
-3. Devolver a `plugin.xml`: los `<depends>` de yaml/lsp4ij y los dos
-   bloques `<extensions>` (fileTypeOverrider + server/fileTypeMapping).
-4. Correr `verifyPlugin` completo (6 IDEs) antes de publicar — no solo
+1. Move `detection/`, `lsp/`, and `runtime/` back to
+   `src/main/kotlin/dev/gaphunter/ansiblecompanion/`, and
+   `detection-tests/` + `runtime-tests/` to
+   `src/test/kotlin/dev/gaphunter/ansiblecompanion/...`.
+2. Restore in `build.gradle.kts`: `bundledPlugin("org.jetbrains.plugins.yaml")`
+   and `plugin("com.redhat.devtools.lsp4ij", "0.20.1")` (or the current
+   version), plus the language server's `Copy` task (see above).
+3. Restore in `plugin.xml`: the yaml/lsp4ij `<depends>` entries and the
+   two `<extensions>` blocks (fileTypeOverrider + server/fileTypeMapping).
+4. Run the full `verifyPlugin` (6 IDEs) before publishing — not just
    `test`/`buildPlugin`.

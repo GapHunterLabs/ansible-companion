@@ -3,10 +3,11 @@ package dev.gaphunter.ansiblecompanion.vault
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 /**
- * Prueba real de plataforma (levanta un proyecto/editor ligero en memoria,
- * headless) en vez de runIde con clicks de mouse — verifica que la accion
- * de verdad reemplaza el texto del documento, no solo que el cifrado esta
- * bien (eso ya lo prueba AnsibleVaultCipherTest contra el vector oficial).
+ * Real platform test (spins up a lightweight in-memory project/editor,
+ * headless) instead of runIde with mouse clicks — verifies that the
+ * action actually replaces the document's text, not just that the
+ * cipher itself is correct (AnsibleVaultCipherTest already proves that
+ * against the official vector).
  */
 class VaultEditorOpsTest : BasePlatformTestCase() {
 
@@ -14,31 +15,31 @@ class VaultEditorOpsTest : BasePlatformTestCase() {
         myFixture.configureByText("secrets.yml", "db_password: <selection>super-secret-123</selection>")
         val editor = myFixture.editor
 
-        VaultEditorOps.encryptSelection(project, editor, "clave-de-prueba")
+        VaultEditorOps.encryptSelection(project, editor, "test-password")
 
         val afterEncrypt = editor.document.text
-        assertTrue("el documento deberia contener el header de vault", afterEncrypt.contains("\$ANSIBLE_VAULT;1.1;AES256"))
-        assertFalse("el secreto en claro no deberia seguir en el documento", afterEncrypt.contains("super-secret-123"))
+        assertTrue("the document should contain the vault header", afterEncrypt.contains("\$ANSIBLE_VAULT;1.1;AES256"))
+        assertFalse("the plaintext secret should no longer be in the document", afterEncrypt.contains("super-secret-123"))
 
         val vaultStart = afterEncrypt.indexOf("\$ANSIBLE_VAULT")
         editor.selectionModel.setSelection(vaultStart, afterEncrypt.length)
 
-        VaultEditorOps.decryptSelection(project, editor, "clave-de-prueba")
+        VaultEditorOps.decryptSelection(project, editor, "test-password")
 
         val afterDecrypt = editor.document.text
         assertEquals("db_password: super-secret-123", afterDecrypt)
     }
 
     fun testWrongPasswordThrowsInsteadOfCorruptingDocument() {
-        myFixture.configureByText("secrets.yml", "<selection>otro-secreto</selection>")
+        myFixture.configureByText("secrets.yml", "<selection>another-secret</selection>")
         val editor = myFixture.editor
 
-        VaultEditorOps.encryptSelection(project, editor, "clave-correcta")
+        VaultEditorOps.encryptSelection(project, editor, "correct-password")
         editor.selectionModel.setSelection(0, editor.document.textLength)
 
         try {
-            VaultEditorOps.decryptSelection(project, editor, "clave-incorrecta")
-            fail("deberia haber lanzado VaultFormatException")
+            VaultEditorOps.decryptSelection(project, editor, "wrong-password")
+            fail("should have thrown VaultFormatException")
         } catch (e: AnsibleVaultCipher.VaultFormatException) {
             assertTrue(editor.document.text.contains("\$ANSIBLE_VAULT"))
         }

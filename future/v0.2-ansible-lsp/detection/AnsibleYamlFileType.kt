@@ -5,14 +5,14 @@ import org.jetbrains.yaml.YAMLFileType
 import org.jetbrains.yaml.YAMLLanguage
 
 /**
- * Mismo lenguaje que YAML (misma sintaxis, folding, PSI: reutiliza
- * YAMLLanguage.INSTANCE) pero un FileType distinto, para que LSP4IJ pueda
- * mapear el language server de Ansible SOLO a estos archivos y no a
- * cualquier .yml/.yaml — ver AnsibleFileTypeOverrider.
+ * Same language as YAML (same syntax, folding, PSI: reuses
+ * YAMLLanguage.INSTANCE) but a distinct FileType, so LSP4IJ can map the
+ * Ansible language server ONLY to these files and not to any .yml/.yaml —
+ * see AnsibleFileTypeOverrider.
  */
 object AnsibleYamlFileType : LanguageFileType(YAMLLanguage.INSTANCE) {
     override fun getName() = "Ansible YAML"
-    override fun getDescription() = "Playbook, role o task file de Ansible"
+    override fun getDescription() = "Ansible playbook, role, or task file"
     override fun getDefaultExtension() = "yml"
     override fun getIcon() = YAMLFileType.YML.icon
 }

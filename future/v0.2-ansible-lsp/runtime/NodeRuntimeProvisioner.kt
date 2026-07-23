@@ -9,18 +9,17 @@ import java.nio.file.Path
 import java.security.MessageDigest
 
 /**
- * Todo lo necesario para dejar un binario de Node usable en disco, sin
- * pedirle al usuario que instale nada: cache-si-ya-esta -> descargar ->
- * verificar checksum ANTES de tocar el contenido -> extraer solo el
- * binario -> marcar completo. Nunca se ejecuta ni se confia en un archive
- * cuyo SHA-256 no coincida con el pineado en NodePlatform.
+ * Everything needed to leave a usable Node binary on disk, without asking
+ * the user to install anything: cache-if-already-there -> download ->
+ * verify checksum BEFORE touching the content -> extract only the binary
+ * -> mark complete. Never runs or trusts an archive whose SHA-256 doesn't
+ * match the one pinned in NodePlatform.
  *
- * `NodeArtifact` separa los datos de "que descargar/verificar" de
- * `NodePlatform` (que sigue siendo la fuente de verdad en produccion) para
- * poder testear el flujo completo (descarga -> checksum -> extraccion ->
- * cache) contra un servidor HTTP local falso, sin depender de Internet ni
- * de los checksums reales de Node (que por diseño no se pueden falsificar
- * en un test).
+ * `NodeArtifact` separates "what to download/verify" from `NodePlatform`
+ * (which remains the source of truth in production) so the full flow
+ * (download -> checksum -> extraction -> cache) can be tested against a
+ * fake local HTTP server, without depending on the Internet or on Node's
+ * real checksums (which by design can't be faked in a test).
  */
 data class NodeArtifact(
     val downloadUrl: String,
@@ -49,9 +48,9 @@ class NodeRuntimeProvisioner(
         ensureProvisioned(platform.toArtifact(), cacheKey = "${NodePlatform.NODE_VERSION}/${platform.name.lowercase()}")
 
     /**
-     * @param cacheKey subcarpeta bajo `cacheRoot` para esta combinacion de
-     *   version+plataforma -> aisla el cache si algun dia se pinea otra
-     *   version de Node sin pisar la anterior.
+     * @param cacheKey subfolder under `cacheRoot` for this version+platform
+     *   combination -> isolates the cache if some future version pins a
+     *   different Node version without overwriting the previous one.
      */
     fun ensureProvisioned(artifact: NodeArtifact, cacheKey: String): Path {
         val platformDir = cacheRoot.resolve(cacheKey)
@@ -73,7 +72,7 @@ class NodeRuntimeProvisioner(
             }
             if (!found) {
                 throw NodeProvisioningException(
-                    "No se encontro '${artifact.binaryPathInArchive}' dentro de ${artifact.downloadUrl}"
+                    "Could not find '${artifact.binaryPathInArchive}' inside ${artifact.downloadUrl}"
                 )
             }
 
@@ -81,7 +80,7 @@ class NodeRuntimeProvisioner(
             Files.writeString(markerPath, "ok")
         } catch (e: Exception) {
             Files.deleteIfExists(binaryPath)
-            throw if (e is NodeProvisioningException) e else NodeProvisioningException("Provisioning de Node fallo: ${e.message}", e)
+            throw if (e is NodeProvisioningException) e else NodeProvisioningException("Node provisioning failed: ${e.message}", e)
         } finally {
             Files.deleteIfExists(tempArchive)
         }
@@ -89,11 +88,11 @@ class NodeRuntimeProvisioner(
     }
 
     /**
-     * Los entries de zip/tar incluyen el folder versionado de primer nivel
-     * (ej. "node-v24.18.0-linux-x64/bin/node") -> se descarta ese primer
-     * segmento y se compara el resto exacto contra la ruta esperada, en vez
-     * de un `endsWith` que podria dar falso positivo con otro archivo del
-     * mismo nombre en una subcarpeta distinta.
+     * zip/tar entries include the top-level versioned folder (e.g.
+     * "node-v24.18.0-linux-x64/bin/node") -> that first segment is
+     * discarded and the rest is compared exactly against the expected
+     * path, instead of an `endsWith` that could false-positive on another
+     * file with the same name in a different subfolder.
      */
     private fun matchesBinaryEntry(entryName: String, expectedSuffix: String): Boolean {
         val normalized = entryName.replace('\\', '/').trimEnd('/')
@@ -106,10 +105,10 @@ class NodeRuntimeProvisioner(
         val response = try {
             httpClient.send(request, HttpResponse.BodyHandlers.ofFile(destination))
         } catch (e: Exception) {
-            throw NodeProvisioningException("No se pudo descargar $url: ${e.message}", e)
+            throw NodeProvisioningException("Could not download $url: ${e.message}", e)
         }
         if (response.statusCode() != 200) {
-            throw NodeProvisioningException("Descarga de Node fallo: HTTP ${response.statusCode()} desde $url")
+            throw NodeProvisioningException("Node download failed: HTTP ${response.statusCode()} from $url")
         }
     }
 
@@ -126,7 +125,7 @@ class NodeRuntimeProvisioner(
         val actual = digest.digest().joinToString("") { "%02x".format(it) }
         if (!actual.equals(expectedSha256, ignoreCase = true)) {
             throw NodeProvisioningException(
-                "Checksum de Node no coincide (esperado $expectedSha256, obtenido $actual) -> descarga descartada"
+                "Node checksum mismatch (expected $expectedSha256, got $actual) -> download discarded"
             )
         }
     }

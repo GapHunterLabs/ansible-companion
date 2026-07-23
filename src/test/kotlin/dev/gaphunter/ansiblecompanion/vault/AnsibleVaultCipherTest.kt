@@ -7,10 +7,10 @@ import org.junit.Test
 
 class AnsibleVaultCipherTest {
 
-    // Vector de prueba real, tomado tal cual de
+    // Real test vector, taken as-is from
     // ansible/ansible: test/units/parsing/vault/test_vault.py
-    // (test_encrypt_decrypt_aes256_existing_vault). Password y ciphertext
-    // son de la propia suite oficial, no inventados.
+    // (test_encrypt_decrypt_aes256_existing_vault). Password and
+    // ciphertext come from the official suite itself, not made up.
     private val realPassword = "test-vault-password"
     private val realVaultText = """
         ${'$'}ANSIBLE_VAULT;1.1;AES256
@@ -29,18 +29,18 @@ class AnsibleVaultCipherTest {
 
     @Test
     fun roundTripsOwnEncryption() {
-        val secret = "el password del cliente nunca va al repo".toByteArray(Charsets.UTF_8)
-        val vaultText = AnsibleVaultCipher.encrypt(secret, "otra-clave-123")
-        val back = AnsibleVaultCipher.decrypt(vaultText, "otra-clave-123")
+        val secret = "the customer's password never goes into the repo".toByteArray(Charsets.UTF_8)
+        val vaultText = AnsibleVaultCipher.encrypt(secret, "another-key-123")
+        val back = AnsibleVaultCipher.decrypt(vaultText, "another-key-123")
         assertArrayEquals(secret, back)
     }
 
     @Test
     fun wrongPasswordFailsHmacInsteadOfSilentlyReturningGarbage() {
-        val vaultText = AnsibleVaultCipher.encrypt("dato sensible".toByteArray(), "clave-correcta")
+        val vaultText = AnsibleVaultCipher.encrypt("sensitive data".toByteArray(), "correct-key")
         try {
-            AnsibleVaultCipher.decrypt(vaultText, "clave-incorrecta")
-            throw AssertionError("deberia haber lanzado VaultFormatException")
+            AnsibleVaultCipher.decrypt(vaultText, "wrong-key")
+            throw AssertionError("should have thrown VaultFormatException")
         } catch (e: AnsibleVaultCipher.VaultFormatException) {
             assertTrue(e.message!!.contains("HMAC"))
         }
