@@ -1,111 +1,123 @@
-# v0.2.0 — FQCN + Jinja2 + YAML scope (on hold)
+# v0.2.0 — FQCN completion + Jinja2 highlighting (on hold, paid tier)
 
-This code compiles and its tests pass (9/9 when it was set aside — plus
-23/23 new ones in `runtime/`, see below), but it was pulled out of
-`src/main/kotlin` so that v0.1.x (vault-only) doesn't depend on LSP4IJ or
-the YAML plugin — that way `verifyPlugin` doesn't flag a reference to
-another plugin's classes without declaring the dependency.
+**Business model (decided 2026-07-23):** v0.1.x (vault encrypt/decrypt)
+stays free forever — it's the acquisition hook and the thing driving
+Marketplace reviews. v0.2.0 (this folder) is the paid tier: "Ansible
+Companion Pro". Suggested price $15-19 USD/year (well under the paid
+incumbent's $59+/year), with a 30-day free trial handled automatically by
+the IDE once the plugin is enrolled for Marketplace monetization (see
+"What you still need to do" below).
 
-## Node bundling blocker — SOLVED (2026-07-23)
+## Why this isn't wrapping `ansible-language-server` anymore
 
-The real blocker keeping this on hold (see ARCHITECTURE.md, section 2) was
-**bundling Node + `@ansible/ansible-language-server` inside the plugin**,
-without asking the user to install anything — Ansible doesn't run on
-native Windows either (confirmed by hand: fails to import `fcntl`), so
-"just install Node/Ansible yourself" isn't a way out for a good share of
-real users.
+The original plan (see git history: `future/v0.2-ansible-lsp/`, abandoned
+2026-07-23) was to wrap Red Hat's `@ansible/ansible-language-server` via
+LSP4IJ. That work — a full Node-runtime provisioner that downloads and
+caches a checksum-verified Node binary per user, since bundling Node
+itself for all 6 OS/arch combos would have meant a 500MB+ plugin — is
+real and it worked (verified end-to-end against the real nodejs.org).
 
-Key diagnosis: the language server package plus its entire dependency tree
-(`@flatten-js/interval-tree`, `antsibull-docs` — a TypeScript
-reimplementation, not a Python shell-out — `axios`, `glob`,
-`vscode-languageserver`, etc.) is **~16MB and 100% pure JS, with no native
-addons** (`find node_modules -name "*.node"` comes back empty) — that part
-CAN be bundled directly inside the plugin with no cross-platform
-portability problem.
+But tracing the language server's own source turned up a hard blocker:
+`utils/misc.js`'s `getUnsupportedError()` does a bare
+`process.platform === "win32"` check and tells the client "Ansible
+Language Server can only run inside WSL on Windows." This isn't cosmetic
+— confirmed by actually launching the bundled server with a real Node
+binary and completing a real LSP `initialize` handshake: it responds fine
+to the handshake, but its core value (FQCN completion, `ansible-lint`
+diagnostics, config discovery) all shell out to real `ansible`,
+`ansible-lint`, `ansible-config` binaries and even use the POSIX-only
+`command -v` for tool detection (`services/ansibleConfig.js`,
+`utils/getAnsibleMetaData.js`). None of that runs in native Windows
+cmd/PowerShell, consistent with `ansible-core` itself failing to import
+`fcntl` there (see `AnsibleVaultCipher`'s own doc comment).
 
-What can't be bundled the same way is the **Node binary** itself: it's
-native and different per platform+architecture (win/linux/mac × x64/arm64
-= 6 combinations, ~80-110MB each uncompressed) — packing all 6 into the
-same `.zip` would balloon the plugin to 500MB+ for a feature most
-installs won't touch the same day they install it. The solution, and the
-pattern other IntelliJ plugins that wrap external tools already use (e.g.
-Rust/rust-analyzer): **download and cache a private per-user Node runtime
-the first time it's needed, verified by checksum before touching its
-contents.**
+Since this plugin's whole reason for existing is Windows users who need
+IntelliJ/PyCharm specifically because Ansible doesn't run natively for
+them, shipping a paid feature that silently doesn't work for most of that
+audience was a non-starter. Pivoted to the same "reimplement, don't wrap
+a tool that doesn't run where our users are" call already made for the
+vault cipher: **static, bundled data + client-side logic, zero external
+dependency.** The old `lsp/` and `runtime/` code was removed (still in
+git history) rather than kept around unused.
 
-### `runtime/` — implemented, tested, and verified against the real nodejs.org
+## What's built here
 
 | File | What it does |
 |---|---|
-| `NodePlatform.kt` | Platform detection (injectable, testable without depending on whatever OS runs the test) + a hand-pinned URL/SHA-256-checksum table for Node **v24.18.0** (LTS "Krypton"), all 6 win/linux/mac × x64/arm64 combinations. |
-| `ArchiveExtractor.kt` | Extracts **a single file** (the `node`/`node.exe` binary) from a `.zip` or `.tar.gz` without decompressing the rest of the tree (npm/docs/headers that never get used) — a hand-written TAR reader (ustar + the GNU long-name extension) instead of adding Apache Commons Compress as a new dependency (same call as `AnsibleVaultCipher`: hand-rolled PBKDF2 instead of a library). |
-| `NodeRuntimeProvisioner.kt` | Orchestrates: if already cached and verified, return that path; otherwise download to a temp file → **verify SHA-256 before extracting or running anything** → extract only the binary → mark `.provisioned` → clean up the temp archive. Never trusts unverified content. |
+| `completion/AnsibleModuleIndex.kt` | Loads a bundled JSON index of `ansible.builtin.*` module names + short descriptions. Data fetched once from the real `ansible/ansible` GitHub repo (the modules directory under `lib/ansible`, stable-2.17 branch, 69 modules with real descriptions after dropping 2 internal/deprecated ones) — see `resources/ansible_builtin_modules.json`. Hand-rolled minimal JSON parser (flat string map only) instead of a new dependency, same call as `AnsibleVaultCipher`/`ArchiveExtractor`. |
+| `completion/AnsibleModuleCompletionContributor.kt` | A `CompletionContributor` scoped to `AnsibleYamlFileType` (from `detection/`, unchanged from the LSP attempt — still needed to avoid hijacking Kubernetes/Helm/Docker-compose YAML) that offers `ansible.builtin.*` completions. |
+| `completion/CheckLicense.kt` | JetBrains's own reference license-verification code (ported from `github.com/JetBrains/marketplace-makemecoffee-plugin`, `CheckLicense.java`, fetched and diffed byte-for-byte for the two embedded root certificates), gating the completion contributor. `PRODUCT_CODE` is a placeholder — see below. |
+| `completion-tests/AnsibleModuleIndexTest.kt` | 6 JUnit tests: JSON parsing (escapes, empty object, sorting), FQCN formatting, and a real load of the bundled resource asserting sane content (50-200 modules, `copy`/`debug`/`command` present, every entry non-blank). |
 
-`runtime-tests/` — 23 JUnit tests, all passing: platform detection, zip/
-tar.gz extraction (including the GNU long-filename case and "entry not
-found"), and the full `NodeRuntimeProvisioner` flow against a real local
-HTTP server (`com.sun.net.httpserver.HttpServer`, no real network, and not
-dependent on Node's real checksums, which by design can't be faked in a
-test) — covers the happy path, cache-hit on the second call, invalid
-checksum (must leave nothing extracted on disk), HTTP 404, and a missing
-entry inside an otherwise valid archive.
+**Verified for real, not just written:** temporarily staged
+`AnsibleModuleIndex.kt` and `CheckLicense.kt` into the live `src/main`
+(which already has the real IntelliJ Platform SDK cached from earlier
+`verifyPlugin` runs) and ran `./gradlew compileKotlin` — confirms
+`LicensingFacade`, `ActionUtil.performAction`, `AnActionEvent.createEvent`
+and the rest of the licensing API calls are correct against the actual
+2025.2.6.2 platform classpath, not just plausible-looking Kotlin. Also ran
+the real test suite (6/6 green, including a load of the actual bundled
+JSON through the real classpath). Removed the temporary copies afterward
+— `git status` confirmed nothing leaked into the live v0.1.x source set.
 
-**Also manually verified once against the real network** (not part of the
-automated test suite — downloads a real ~90MB, not CI-appropriate): a
-smoke-test `main()` (`SmokeTestMain.kt`, deliberately not included here —
-it only ever lived in a throwaway Gradle project in the scratchpad of the
-session that wrote this) ran `NodePlatform.detect()` against the machine's
-real `os.name`/`os.arch`, downloaded the real `node-v24.18.0-win-x64.zip`
-from `nodejs.org`, verified its SHA-256 against the pinned value, extracted
-only `node.exe` (92,534,088 bytes — the binary alone, not the full tree),
-ran it with `--version` and confirmed `v24.18.0`, and confirmed a second
-call uses the cache (1ms vs ~8s the first time). To reproduce: create a
-standalone Kotlin Gradle project with these 3 files plus a `main()` that
-calls `NodeRuntimeProvisioner(tempDir).ensureProvisioned(platform)` and
-runs the resulting binary with `--version`.
+**Bug caught during this verification, worth remembering:** Kotlin block
+comments *nest* (unlike Java/C). A KDoc originally described the data
+source as fetched from `` `lib/ansible/modules/*.py` `` — the `/*` inside
+that path opened a *nested* comment that the KDoc's own closing `*/` never
+reached, so the outer comment stayed open all the way to true EOF and
+`compileKotlin` failed with "Unclosed comment" pointing at the last line
+of the file, nowhere near the actual cause. This is the mirror image of
+the previously-documented bug (a literal `*/` inside a comment closing it
+early, e.g. `roles/*/tasks`) — same root cause (a path-like string
+containing `/*` or `*/`), opposite mechanism (nesting-overflow instead of
+early-close). Found it by bisecting the file with real `compileKotlin`
+runs rather than eyeballing, since character-by-character reasoning about
+where `/*`/`*/` pairs "should" match didn't account for nesting depth.
+**Rule of thumb: never let a literal `/*` or `*/` substring — from a path,
+a glob pattern, a code snippet — appear inside a Kotlin comment.**
 
-`AnsibleLanguageServer.kt`/`AnsibleLanguageServerFactory.kt` are already
-updated to use the provisioner (via `PathManager.getSystemPath()` as the
-cache root) instead of assuming `node` is on the system PATH.
+## What you still need to do (Marketplace side, not scriptable)
 
-### What's still pending before reactivating this in `src/main`
+`CheckLicense.PRODUCT_CODE` is a placeholder
+(`"TODO_REPLACE_WITH_REAL_MARKETPLACE_PRODUCT_CODE"`). The real value is
+assigned by JetBrains when "Gap Hunter Labs" enrolls this plugin for paid
+status:
 
-**Bundle the language server (pure JS, ~16MB) inside the plugin's `.zip`.**
-Today `AnsibleLanguageServerFactory` still points at
-`node_modules/@ansible/ansible-language-server/...` (a development-only
-path, relative to `runIde`'s working directory, that only happens to
-resolve in the sandbox). Concrete plan for whoever picks this up next:
+1. On the plugin's Marketplace vendor dashboard, open the Monetization /
+   "Paid Plugins" tab and apply for paid-plugin status — this involves
+   agreeing to JetBrains's revenue-share terms and providing payout/tax
+   details for a Colombia-based vendor. **This is a financial/legal
+   commitment — do this yourself, not as something to click through by
+   proxy**, though happy to guide you field-by-field live the way we did
+   for the plain-text Overview fields.
+2. Once approved, JetBrains assigns a product `code`. Set the price
+   ($15-19/year suggested) and the trial length (30 days — the IDE side
+   handles trial countdown automatically via the same `LicensingFacade`
+   check, no separate trial logic needed in our code).
+3. Put that real code in two places: `CheckLicense.PRODUCT_CODE`, and (once
+   this folder is reactivated) `plugin.xml`'s
+   `<product-descriptor code="..." release-date="YYYYMMDD" release-version="1"/>`
+   tag.
 
-1. Add a Gradle `Copy` task in `build.gradle.kts` that runs (or depends
-   on) `npm install --omit=dev` into a build directory, and copies the
-   full `node_modules/@ansible/ansible-language-server/` (with its
-   resolved dependency tree) to something like
-   `build/bundled-lsp/ansible-language-server/`.
-2. Include that directory in the final `.zip` — the IntelliJ Gradle
-   plugin allows adding loose files to the artifact via the
-   `intellijPlatform.pluginConfiguration` block, or by directly adjusting
-   the `buildPlugin`/`prepareSandbox` task to copy that folder into `lib/`
-   or a sibling folder of the jar (as opposed to "a resource inside the
-   jar", which does NOT work here because Node needs real files on disk,
-   not `.jar` entries).
-3. In `AnsibleLanguageServerFactory`, resolve the path to the bundled
-   `server.js` relative to the plugin's own installation (e.g.
-   `PluginManagerCore.getPlugin(pluginId)?.pluginPath`), not to a
-   development-only `node_modules/`.
-4. Confirm with `verifyPlugin` that the final `.zip` carries those files
-   and that the total size stays reasonable (~16MB extra, nowhere near
-   the 500MB+ bundling Node itself would have cost).
+## What's still pending before reactivating this in `src/main`
 
-## To reactivate (once the bundling above is solved)
+1. Replace the placeholder `PRODUCT_CODE` (see above).
+2. Add `<product-descriptor>` to `plugin.xml` — **do not** add this to the
+   live v0.1.x `plugin.xml` before v0.2 actually ships in the same
+   release; it would misrepresent the currently-free vault plugin as paid.
+3. Decide the exact completion trigger (right now the contributor fires
+   on any completion inside an Ansible-detected file; consider scoping it
+   to task-list module-key position specifically, to avoid noisy
+   suggestions everywhere).
+4. Jinja2-in-YAML highlighting (complaint #3) — not started yet. Likely
+   an `Annotator` that tags `{{ }}`/`{% %}` regions inside YAML scalars
+   with distinct text attributes, not a full grammar/parser.
+5. Move `detection/`, `completion/` back to `src/main/kotlin/...`, and
+   `detection-tests/`, `completion-tests/` to `src/test/kotlin/...`.
+6. Run the full `verifyPlugin` (6 IDEs) before publishing.
 
-1. Move `detection/`, `lsp/`, and `runtime/` back to
-   `src/main/kotlin/dev/gaphunter/ansiblecompanion/`, and
-   `detection-tests/` + `runtime-tests/` to
-   `src/test/kotlin/dev/gaphunter/ansiblecompanion/...`.
-2. Restore in `build.gradle.kts`: `bundledPlugin("org.jetbrains.plugins.yaml")`
-   and `plugin("com.redhat.devtools.lsp4ij", "0.20.1")` (or the current
-   version), plus the language server's `Copy` task (see above).
-3. Restore in `plugin.xml`: the yaml/lsp4ij `<depends>` entries and the
-   two `<extensions>` blocks (fileTypeOverrider + server/fileTypeMapping).
-4. Run the full `verifyPlugin` (6 IDEs) before publishing — not just
-   `test`/`buildPlugin`.
+## To reactivate
+
+1. Do steps 1-2 above first (product code + `<product-descriptor>`).
+2. Move the folders per step 5 above.
+3. `./gradlew test buildPlugin verifyPlugin`.
