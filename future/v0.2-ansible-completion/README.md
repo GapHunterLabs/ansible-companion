@@ -76,48 +76,36 @@ where `/*`/`*/` pairs "should" match didn't account for nesting depth.
 **Rule of thumb: never let a literal `/*` or `*/` substring — from a path,
 a glob pattern, a code snippet — appear inside a Kotlin comment.**
 
-## What you still need to do (Marketplace side, not scriptable)
+## Marketplace monetization enrollment — DONE (2026-07-23)
 
-`CheckLicense.PRODUCT_CODE` is a placeholder
-(`"TODO_REPLACE_WITH_REAL_MARKETPLACE_PRODUCT_CODE"`). The real value is
-assigned by JetBrains when "Gap Hunter Labs" enrolls this plugin for paid
-status:
-
-1. On the plugin's Marketplace vendor dashboard, open the Monetization /
-   "Paid Plugins" tab and apply for paid-plugin status — this involves
-   agreeing to JetBrains's revenue-share terms and providing payout/tax
-   details for a Colombia-based vendor. **This is a financial/legal
-   commitment — do this yourself, not as something to click through by
-   proxy**, though happy to guide you field-by-field live the way we did
-   for the plain-text Overview fields.
-2. Once approved, JetBrains assigns a product `code`. Set the price
-   ($15-19/year suggested) and the trial length (30 days — the IDE side
-   handles trial countdown automatically via the same `LicensingFacade`
-   check, no separate trial logic needed in our code).
-3. Put that real code in two places: `CheckLicense.PRODUCT_CODE`, and (once
-   this folder is reactivated) `plugin.xml`'s
-   `<product-descriptor code="..." release-date="YYYYMMDD" release-version="1"/>`
-   tag.
+"Gap Hunter Labs" enrolled the plugin on the Monetization tab with the
+**FREEMIUM** pricing model (the plugin itself stays free to install; only
+the v0.2 features go behind a license — as opposed to the plain "PAID"
+model, which would paywall everything from install). JetBrains assigned
+the real product code **`[REDACTED-PRODUCT-CODE]`**, now in
+`CheckLicense.PRODUCT_CODE` (was a placeholder before this). Still open:
+setting the actual price ($15-19/year suggested) and confirming the trial
+length on that same Monetization tab, if not already done.
 
 ## What's still pending before reactivating this in `src/main`
 
-1. Replace the placeholder `PRODUCT_CODE` (see above).
-2. Add `<product-descriptor>` to `plugin.xml` — **do not** add this to the
+1. Add `<product-descriptor code="[REDACTED-PRODUCT-CODE]" release-date="YYYYMMDD" release-version="1"/>`
+   to `plugin.xml` — **do not** add this to the
    live v0.1.x `plugin.xml` before v0.2 actually ships in the same
    release; it would misrepresent the currently-free vault plugin as paid.
-3. Decide the exact completion trigger (right now the contributor fires
+2. Decide the exact completion trigger (right now the contributor fires
    on any completion inside an Ansible-detected file; consider scoping it
    to task-list module-key position specifically, to avoid noisy
    suggestions everywhere).
-4. Jinja2-in-YAML highlighting (complaint #3) — not started yet. Likely
+3. Jinja2-in-YAML highlighting (complaint #3) — not started yet. Likely
    an `Annotator` that tags `{{ }}`/`{% %}` regions inside YAML scalars
    with distinct text attributes, not a full grammar/parser.
-5. Move `detection/`, `completion/` back to `src/main/kotlin/...`, and
+4. Move `detection/`, `completion/` back to `src/main/kotlin/...`, and
    `detection-tests/`, `completion-tests/` to `src/test/kotlin/...`.
-6. Run the full `verifyPlugin` (6 IDEs) before publishing.
+5. Run the full `verifyPlugin` (6 IDEs) before publishing.
 
 ## To reactivate
 
-1. Do steps 1-2 above first (product code + `<product-descriptor>`).
-2. Move the folders per step 5 above.
+1. Add `<product-descriptor>` to `plugin.xml` (step 1 above).
+2. Move the folders per step 4 above.
 3. `./gradlew test buildPlugin verifyPlugin`.

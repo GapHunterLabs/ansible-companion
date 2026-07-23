@@ -34,18 +34,16 @@ import java.util.Base64
  * verifying that a license was genuinely signed by them -> do not modify
  * it when adapting this file, only PRODUCT_CODE is project-specific.
  *
- * TODO before this can gate anything real: PRODUCT_CODE below is a
- * placeholder. The real value is assigned by JetBrains when "Gap Hunter
- * Labs" enrolls this plugin for paid status on the Marketplace vendor
- * dashboard (Monetization tab) -> that enrollment involves agreeing to
- * JetBrains's revenue-share terms and providing payout/tax details, so
- * it has to be done by the account holder directly, not scripted. Once
- * that real code exists, put it here AND in plugin.xml's
- * <product-descriptor code="..."/> tag (see future/v0.2-ansible-completion/README.md).
+ * PRODUCT_CODE below is the real code JetBrains assigned when "Gap Hunter
+ * Labs" enrolled this plugin for Marketplace monetization (FREEMIUM
+ * pricing model, 2026-07-23). It must also go into plugin.xml's
+ * <product-descriptor code="..."/> tag once this folder is reactivated
+ * (see future/v0.2-ansible-completion/README.md) -- the two have to match
+ * exactly or LicensingFacade.getConfirmationStamp will not resolve.
  */
 object CheckLicense {
     /** Must be the same value as plugin.xml's `<product-descriptor code="...">` tag. */
-    private const val PRODUCT_CODE = "TODO_REPLACE_WITH_REAL_MARKETPLACE_PRODUCT_CODE"
+    private const val PRODUCT_CODE = "[REDACTED-PRODUCT-CODE]"
 
     private const val KEY_PREFIX = "key:"
     private const val STAMP_PREFIX = "stamp:"
