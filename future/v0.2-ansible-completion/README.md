@@ -76,20 +76,48 @@ where `/*`/`*/` pairs "should" match didn't account for nesting depth.
 **Rule of thumb: never let a literal `/*` or `*/` substring — from a path,
 a glob pattern, a code snippet — appear inside a Kotlin comment.**
 
-## Marketplace monetization enrollment — DONE (2026-07-23)
+## Marketplace monetization enrollment — applied, not yet approved (2026-07-23)
 
-"Gap Hunter Labs" enrolled the plugin on the Monetization tab with the
-**FREEMIUM** pricing model (the plugin itself stays free to install; only
-the v0.2 features go behind a license — as opposed to the plain "PAID"
-model, which would paywall everything from install). JetBrains assigned
-the real product code **`[REDACTED-PRODUCT-CODE]`**, now in
-`CheckLicense.PRODUCT_CODE` (was a placeholder before this). Still open:
-setting the actual price ($15-19/year suggested) and confirming the trial
-length on that same Monetization tab, if not already done.
+"Gap Hunter Labs" applied on the Monetization tab for the **FREEMIUM**
+pricing model (the plugin itself stays free to install; only the v0.2
+features go behind a license — as opposed to the plain "PAID" model,
+which would paywall everything from install). JetBrains assigned the real
+product code **`[REDACTED-PRODUCT-CODE]`** immediately, now in
+`CheckLicense.PRODUCT_CODE` (was a placeholder before this) — but per
+JetBrains's own text on that page, **"After applying for the Freemium or
+Fully Paid pricing model, you will be contacted by our Support team"**,
+so this isn't fully approved yet, just applied for.
+
+JetBrains's own checklist for what's left (shown on that same page,
+reproduced here so it doesn't get lost):
+
+1. Inform users about the upcoming changes. (marketing, not code)
+2. Obfuscate the plugin (optional — skip).
+3. ~~Implement license verification calls.~~ **Done** — `CheckLicense.kt`.
+4. **Create an organization and add banking information** in the
+   'Vendor Information' tab. This is the real financial/legal/tax step —
+   account holder's own action, not scriptable, same as flagged before.
+5. Prepare the plugin on the Marketplace demo to test changes (optional).
+6. Make changes in `plugin.xml` (see below — do this only when v0.2 ships).
+7. Set the product descriptor's `code`, `release-date`, `release-version`,
+   **and set `optional="true"`** — this is the attribute that actually
+   marks the paid features as an add-on rather than making the whole
+   plugin require a license, i.e. it's what makes FREEMIUM actually mean
+   freemium instead of fully paid. Did not know about this attribute
+   before reading JetBrains's own checklist; it changes the
+   `<product-descriptor>` tag below.
+8. Check that plugin.xml's `<vendor>` matches the `organization_id` created
+   in step 4 — may need to change from the display name "Gap Hunter Labs"
+   to whatever ID the organization gets.
+9. Set up pricing, offers, and coupons (this is where the actual
+   $15-19/year price and 30-day trial get configured — apparently not
+   available until the steps above are further along, not simply a field
+   on the current page).
+10. Release the plugin.
 
 ## What's still pending before reactivating this in `src/main`
 
-1. Add `<product-descriptor code="[REDACTED-PRODUCT-CODE]" release-date="YYYYMMDD" release-version="1"/>`
+1. Add `<product-descriptor code="[REDACTED-PRODUCT-CODE]" release-date="YYYYMMDD" release-version="1" optional="true"/>`
    to `plugin.xml` — **do not** add this to the
    live v0.1.x `plugin.xml` before v0.2 actually ships in the same
    release; it would misrepresent the currently-free vault plugin as paid.
