@@ -1,4 +1,5 @@
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -43,4 +44,16 @@ intellijPlatform {
     // if a future plugin version fixes it and the extra runtime check is
     // wanted.
     instrumentCode = false
+
+    // Catch experimental/internal API usage locally, before Marketplace's
+    // own verifier flags it post-upload.
+    pluginVerification {
+        failureLevel = listOf(
+            VerifyPluginTask.FailureLevel.COMPATIBILITY_PROBLEMS,
+            VerifyPluginTask.FailureLevel.INTERNAL_API_USAGES,
+            VerifyPluginTask.FailureLevel.OVERRIDE_ONLY_API_USAGES,
+            VerifyPluginTask.FailureLevel.EXPERIMENTAL_API_USAGES,
+            VerifyPluginTask.FailureLevel.SCHEDULED_FOR_REMOVAL_API_USAGES,
+        )
+    }
 }
