@@ -3,5 +3,6 @@
 .idea
 .intellijPlatform
 .kotlin
+bin
 build
 node_modules
