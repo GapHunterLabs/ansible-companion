@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+## [0.1.3]
+
+### Added
+
+- Gap Hunter Labs brand icon (`pluginIcon.svg` / `pluginIcon_dark.svg`).
+
 ## [0.1.2]
 
 ### Fixed
@@ -34,12 +40,14 @@
 
 ### On hold for 0.2.0
 
-See `future/v0.2-ansible-lsp/README.md`. Real blocker: bundling Node +
-`ansible-language-server` inside the plugin (Ansible doesn't run on native
-Windows, so asking the user to install it isn't a way out).
-
 - FQCN-aware completion (`ansible.builtin.*`).
 - Correct Jinja2 parsing inside YAML.
 - File-type detection that doesn't hijack Kubernetes/Helm/Docker-compose
   YAML.
 - Role support, multi-environment variable preview.
+
+[Unreleased]: https://github.com/kendjm/ansible-companion/compare/0.1.3...HEAD
+[0.1.3]: https://github.com/kendjm/ansible-companion/compare/0.1.2...0.1.3
+[0.1.2]: https://github.com/kendjm/ansible-companion/compare/0.1.1...0.1.2
+[0.1.1]: https://github.com/kendjm/ansible-companion/compare/0.1.0...0.1.1
+[0.1.0]: https://github.com/kendjm/ansible-companion/commits/0.1.0
