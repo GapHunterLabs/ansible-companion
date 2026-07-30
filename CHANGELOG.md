@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.1.4]
+
+### Changed
+
+- Added a strict local `verifyPlugin` gate (catches
+  `@ApiStatus.OverrideOnly`/`Internal`/`Experimental` API usage and
+  compatibility problems before Marketplace's own verifier would) — no
+  user-visible change, confirmed passing clean against all 6 target IDEs.
+
 ## [0.1.3]
 
 ### Added
@@ -46,7 +55,8 @@
   YAML.
 - Role support, multi-environment variable preview.
 
-[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.3...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.4...HEAD
+[0.1.4]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.2...0.1.3
 [0.1.2]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.1...0.1.2
 [0.1.1]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.0...0.1.1
