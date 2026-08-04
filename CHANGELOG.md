@@ -4,7 +4,29 @@
 
 ## [Unreleased]
 
-## [0.1.6]
+## [2026.1.0]
+
+### Changed
+
+- **Version scheme**: this plugin now versions as `YYYY.MINOR.PATCH`
+  (JetBrains's own convention for Paid/Freemium plugins) instead of
+  semver (`0.1.x`) — required by a hard Marketplace validation rule:
+  `<product-descriptor>`'s `release-version` must share its leading
+  digits with the plugin's own version (`release-version=20261` only
+  validates against a plugin version starting `2026.1`), confirmed by
+  a real local `verifyPlugin` failure, not assumed from documentation
+  alone. This is the only plugin in the Gap Hunter Labs catalog on
+  this scheme — the other 19 aren't enrolled in Paid/Freemium and keep
+  semver unchanged.
+
+### Added
+
+- `<product-descriptor>` in `plugin.xml`, required to complete the
+  Freemium pricing model JetBrains approved for this plugin (Marketplace
+  support ticket #[REDACTED-TICKET]): `code="[REDACTED-PRODUCT-CODE]"`, `optional="true"`
+  (the attribute that keeps this Freemium rather than fully Paid — the
+  plugin still installs and runs with no license at all, only the
+  Pro-tier features gate on `CheckLicense.isLicensed()`, unchanged).
 
 ### Fixed
 
@@ -117,8 +139,8 @@ see `KNOWN_ISSUES.md` for full root causes:
   YAML.
 - Role support, multi-environment variable preview.
 
-[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.6...HEAD
-[0.1.6]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.5...0.1.6
+[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.1.0...HEAD
+[2026.1.0]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.5...2026.1.0
 [0.1.5]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.4...0.1.5
 [0.1.4]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.2...0.1.3
