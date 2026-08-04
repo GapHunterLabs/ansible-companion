@@ -1,0 +1,5 @@
+---
+# Secrets for the webservers group. Select a plaintext value below and
+# right-click > "Encrypt Selection as Ansible Vault" to demo the feature.
+vault_db_password: "S3cur3AcmeProd!2026"
+vault_deploy_api_key: "acme_deploy_9f8e7d6c5b4a3210"
