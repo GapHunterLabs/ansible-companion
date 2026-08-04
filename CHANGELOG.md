@@ -22,8 +22,8 @@
 ### Added
 
 - `<product-descriptor>` in `plugin.xml`, required to complete the
-  Freemium pricing model JetBrains approved for this plugin (Marketplace
-  support ticket #[REDACTED-TICKET]): `code="[REDACTED-PRODUCT-CODE]"`, `optional="true"`
+  Freemium pricing model JetBrains approved for this plugin:
+  `code="[REDACTED-PRODUCT-CODE]"`, `optional="true"`
   (the attribute that keeps this Freemium rather than fully Paid — the
   plugin still installs and runs with no license at all, only the
   Pro-tier features gate on `CheckLicense.isLicensed()`, unchanged).
