@@ -1,10 +1,8 @@
 package dev.gaphunter.ansiblecompanion.completion
 
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.ActionUiKind
-import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.DataContext
-import com.intellij.openapi.actionSystem.Presentation
 import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
@@ -155,10 +153,34 @@ object CheckLicense {
             registerAction = actionManager.getAction("Register")
         }
         if (registerAction != null) {
-            // This API is available starting from IDE version 243.*.
-            ActionUtil.performAction(
+            // Deliberately none of the APIs tried first, all confirmed
+            // wrong by real Plugin Verifier runs against IU-243 through
+            // IU-262 (this plugin's sinceBuild=243, no untilBuild ceiling):
+            // 1. ActionUtil.performAction(AnAction, AnActionEvent) -- the
+            //    2-arg overload returning AnActionResult only exists from
+            //    IDE 244 (2024.2) onward; unresolved invokestatic /
+            //    NoSuchMethodError risk on 243.x.
+            // 2. AnAction.actionPerformed(AnActionEvent) called directly --
+            //    resolves fine everywhere, but it's @ApiStatus.OverrideOnly:
+            //    the verifier flags any external invocation of it, only
+            //    overriding it is allowed.
+            // 3. ActionManager.tryToExecute(action, InputEvent?, Component?,
+            //    place, now) -- confirmed to resolve and be verifier-clean,
+            //    but it has no DataContext parameter, so it can't carry
+            //    productCode/message to the Register dialog (loses the
+            //    product preselection this whole method exists for).
+            // ActionUtil.invokeAction(AnAction, DataContext, String place,
+            // InputEvent?, Runnable? onDone) is ActionUtil's own documented
+            // replacement for the deprecated Component-based invokeAction
+            // overload (confirmed via its @Deprecated ReplaceWith pointing
+            // here), accepts DataContext, and isn't flagged
+            // Experimental/OverrideOnly/Internal by the verifier.
+            ActionUtil.invokeAction(
                 registerAction,
-                AnActionEvent.createEvent(asDataContext(productCode, message), Presentation(), "", ActionUiKind.NONE, null),
+                asDataContext(productCode, message),
+                ActionPlaces.UNKNOWN,
+                null,
+                null,
             )
         }
     }

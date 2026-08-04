@@ -23,8 +23,17 @@ class AnsibleFileTypeOverrider : FileTypeOverrider {
         if (!file.name.endsWith(".yml") && !file.name.endsWith(".yaml")) return null
 
         val head = try {
-            val bytes = file.contentsToByteArray()
-            String(bytes, 0, minOf(bytes.size, HEAD_BYTES), Charsets.UTF_8)
+            // Deliberately NOT file.contentsToByteArray(): that path calls
+            // back into FileTypeManagerImpl.getFileTypeByFile(), which
+            // re-invokes every registered FileTypeOverrider (including this
+            // one) -> unbounded recursion / StackOverflowError, confirmed by
+            // a real test failure. getInputStream() reads raw bytes without
+            // touching file-type resolution at all.
+            file.inputStream.use { stream ->
+                val buffer = ByteArray(HEAD_BYTES)
+                val read = stream.read(buffer)
+                if (read <= 0) "" else String(buffer, 0, read, Charsets.UTF_8)
+            }
         } catch (e: Exception) {
             return null
         }

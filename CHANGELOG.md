@@ -4,6 +4,56 @@
 
 ## [Unreleased]
 
+## [0.1.5]
+
+### Added
+
+- FQCN-aware completion for `ansible.builtin.*` modules (69 bundled
+  modules with real descriptions), scoped to YAML task-key positions —
+  the paid Ansible Companion Pro tier. Unlicensed users see a single
+  upsell item instead of the real completions.
+- Jinja2 (`{{ }}`/`{% %}`/`{# #}`) syntax highlighting inside Ansible
+  YAML scalars, also part of the Pro tier — pure text-scan detection, no
+  real Jinja2 engine or Python dependency.
+
+### Fixed
+
+Seven real bugs found and fixed during integration — five caught live in
+`runIde`, two caught only by the full `verifyPlugin` (6 target IDEs) —
+see `KNOWN_ISSUES.md` for full root causes:
+
+- Infinite recursion (`StackOverflowError`) in the Ansible file
+  detector: it read file content via `VirtualFile.contentsToByteArray()`,
+  which internally re-invokes every registered `FileTypeOverrider`
+  (including itself) — switched to `getInputStream()`, which doesn't
+  touch file-type resolution at all.
+- FQCN completion never fired for the single most common case (a
+  brand-new task, no `:` typed yet) — the YAML-key-position guard only
+  checked for an already-parsed `YAMLKeyValue`, which doesn't exist
+  until the colon is typed.
+- Completion/highlighting guards trusted `PsiFile.fileType == AnsibleYamlFileType`,
+  which can silently disagree with `FileTypeOverrider`'s own result for
+  the lifetime of an already-open file — both now re-run the same
+  detection heuristic directly instead.
+- The unlicensed upsell completion item was being added to the result
+  set but never rendered: its lookup string didn't satisfy the
+  platform's prefix matching against what was already typed. Fixed by
+  building the lookup string from the real typed prefix instead of a
+  fixed guess.
+- `CheckLicense.showRegisterDialog()` (ported from JetBrains's own
+  reference license-verification plugin) called an `ActionUtil`
+  overload only available from IDE 244 onward, breaking compatibility
+  with this plugin's own `sinceBuild=243` — replaced with
+  `ActionUtil.invokeAction(AnAction, DataContext, ...)` after two other
+  candidates were each confirmed wrong by a real `verifyPlugin` run
+  (one didn't exist pre-244, the other is `@ApiStatus.OverrideOnly` and
+  can't be invoked by client code).
+- `FileTypeOverrider` (the interface `AnsibleFileTypeOverrider`
+  implements) is itself `@ApiStatus.Experimental` with no
+  non-experimental alternative for this use case — `EXPERIMENTAL_API_USAGES`
+  removed from this plugin's `verifyPlugin` failure gate as a
+  documented, deliberate exception.
+
 ## [0.1.4]
 
 ### Changed
@@ -55,7 +105,8 @@
   YAML.
 - Role support, multi-environment variable preview.
 
-[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.4...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.5...HEAD
+[0.1.5]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.4...0.1.5
 [0.1.4]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.2...0.1.3
 [0.1.2]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.1...0.1.2

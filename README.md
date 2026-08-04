@@ -41,16 +41,19 @@ Select text in the editor → right-click:
 
 The password is never saved or cached between uses.
 
-## What's next (`future/v0.2-ansible-lsp/`)
+## Ansible Companion Pro
 
-FQCN-aware completion (`ansible.builtin.*`), correct Jinja2 parsing inside
-YAML, and file-type detection that doesn't hijack Kubernetes/Helm/
-Docker-compose YAML — built and tested, but held out of this release. The
-Node-runtime bundling blocker (downloading and caching a checksum-verified
-Node binary per user, so end users never need Node installed themselves)
-is now solved — see `future/v0.2-ansible-lsp/README.md`. What's still
-pending: bundling the language server's own JS files into the plugin's
-`.zip`.
+FQCN-aware completion for `ansible.builtin.*` modules and Jinja2
+(`{{ }}`/`{% %}`/`{# #}`) syntax highlighting inside Ansible YAML are
+available as an optional paid tier (file-type detection that doesn't
+hijack Kubernetes/Helm/Docker-compose YAML — the free tier's own
+detection already covers that). Vault encrypt/decrypt above stays free
+forever.
+
+### Enterprise / Team Licensing
+
+Need volume licensing for your team, custom detection rules, or
+priority support? Contact us at **kennyj.diazm@gmail.com**.
 
 Role support and multi-environment variable preview aren't built yet.
 

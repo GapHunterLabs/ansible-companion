@@ -163,41 +163,67 @@ docs rather than guessing further:
   value that could get the release rejected.
 - `optional="true"`: required for FREEMIUM (see checklist item 7 above).
 
-## What's still pending before reactivating this in `src/main`
+## Reactivation status (updated 2026-07-30): code is fully integrated into `src/main`
 
-Everything code-side is now built and compile-verified (FQCN completion,
-scoped to key-position; Jinja2 highlighting; licensing). What's left is
-mostly Marketplace-side and a few deliberate follow-ups:
+Everything in this folder except this README has been moved into
+`src/main/kotlin/...` / `src/test/kotlin/...`, and `future/v0.2-ansible-completion/`
+now only holds this document as a historical record of the design
+decisions and the bugs found while integrating. What actually happened,
+in order:
+
+1. Moved `completion/`, `detection/`, and their test folders into
+   `src/main`/`src/test` proper.
+2. Restored `bundledPlugin("org.jetbrains.plugins.yaml")` for real in
+   `build.gradle.kts` (no longer temporary).
+3. Registered `AnsibleFileTypeOverrider`, `AnsibleModuleCompletionContributor`,
+   and `JinjaHighlightingAnnotator` in `plugin.xml`'s `<extensions>`.
+4. Found and fixed **five real bugs**, only two of which unit tests
+   caught — the rest needed a real `runIde` sandbox with manual
+   completion/highlighting testing to surface at all. Full root-cause
+   writeups live in `../../KNOWN_ISSUES.md` (Rounds 1-5, all dated
+   2026-07-30):
+   - Round 1: infinite recursion in `AnsibleFileTypeOverrider` from
+     calling `VirtualFile.contentsToByteArray()`.
+   - Round 2: FQCN completion never fired for a brand-new task (no
+     `YAMLKeyValue` parsed yet before the `:` is typed).
+   - Round 3: `PsiFile.fileType == AnsibleYamlFileType` guard never
+     matched, because `FileTypeOverrider`'s result and the PSI-visible
+     `FileType` can disagree for the lifetime of an already-open file —
+     both the completion contributor and the annotator now re-run
+     `AnsibleFileDetector` directly instead of trusting FileType
+     identity.
+   - Round 4 + 5: the unlicensed upsell completion item was being added
+     to the `CompletionResultSet` but silently filtered before
+     rendering, because its lookup string didn't satisfy the platform's
+     prefix match against what was already typed — fixed by building
+     the lookup string from `result.prefixMatcher.prefix` itself.
+5. Verified manually in a real `runIde` sandbox (not just unit tests):
+   FQCN completion's upsell item renders correctly for an unlicensed
+   user; Jinja2 highlighting stays correctly gated off (no highlight,
+   no exception) without a license. Neither had ever been exercised in
+   an actual running editor before this session.
+6. `./gradlew test` green (36/36) after every fix; `verifyPlugin` (6
+   IDEs) run as the final gate before this can ship — see
+   `../../CHANGELOG.md` `[0.1.5]` for the confirmed result.
+7. Item 2 from the original pending list (narrowing the completion
+   trigger to top-level task keys only, not nested module parameters
+   like `copy:\n  <caret>`) is **still open** — confirmed still firing
+   for nested keys during this session's `runIde` testing. Left as a
+   known follow-up (`KNOWN_ISSUES.md` Round 2's note), not blocking this
+   release.
+
+## Still pending — Marketplace/licensing side only, not code
+
+The remaining checklist items are entirely about the paid-tier rollout
+mechanics, not this folder's code:
 
 1. Add `<product-descriptor code="[REDACTED-PRODUCT-CODE]" release-date="YYYYMMDD" release-version="TBD" optional="true"/>`
    to `plugin.xml` (see exact rules above for `release-version` — don't
-   reuse the placeholder literally), **and** change `<vendor>` from
+   reuse a placeholder literally), **and** change `<vendor>` from
    `Gap Hunter Labs` to `[REDACTED-ORG-SLUG]` in the same edit (checklist
-   item 8, confirmed above). **Do not** make either change to the live
-   v0.1.x `plugin.xml` before v0.2 actually ships in the same release.
-2. Narrow the completion trigger further: right now it fires on any YAML
-   key inside an Ansible-detected file, including nested module
-   parameters (e.g. inside `copy:\n  <caret>`), not just top-level task
-   keys. Needs live `runIde` verification to get the exact PSI shape
-   right rather than guessing further untested.
-3. Register `AnsibleModuleCompletionContributor` and
-   `JinjaHighlightingAnnotator` in `plugin.xml`'s `<extensions>` (the
-   latter with `language="yaml"` so the platform only invokes it for
-   YAML files — see the annotator's own doc comment).
-4. Move `detection/`, `completion/` back to `src/main/kotlin/...`, and
-   `detection-tests/`, `completion-tests/` to `src/test/kotlin/...`.
-   Restore `bundledPlugin("org.jetbrains.plugins.yaml")` in
-   `build.gradle.kts` for real this time (not temporary).
-5. Run the full `verifyPlugin` (6 IDEs) before publishing.
-6. Manually verify Jinja2 highlighting and completion in a real `runIde`
-   sandbox (typed, not just compiled) — neither has been exercised in an
-   actual running editor yet, only compile-checked and unit-tested.
-
-## To reactivate
-
-1. Add `<product-descriptor>` and fix `<vendor>` in `plugin.xml` (step 1
-   above).
-2. Move the folders per step 4 above, restore the YAML dependency for
-   real.
-3. Register the extensions in `plugin.xml` (step 3 above).
-4. `./gradlew test buildPlugin verifyPlugin`, then a manual `runIde` pass.
+   item 8, confirmed above). Deliberately **not** done in this session's
+   `0.1.5` — this is a separate, explicit step for whenever the paid
+   tier actually goes live on Marketplace, not bundled into "ship the
+   free-tier-visible feature code."
+2. Everything else already listed above under "Marketplace monetization
+   enrollment" (steps 1, 2, 5, 9, 10 of JetBrains's own checklist).

@@ -11,10 +11,13 @@
         <p>Select plain text -> <b>Encrypt Selection as Ansible Vault</b>, or a
         <code>$ANSIBLE_VAULT;1.1;AES256</code> block -> <b>Decrypt Ansible Vault Selection</b>.
         Both available from the editor's context menu. The password is never saved or cached.</p>
-        <p>FQCN-aware completion and role support are coming in a future release.</p>
+        <p>FQCN-aware completion for <code>ansible.builtin.*</code> modules and Jinja2
+        (<code>{{ }}</code>/<code>{% %}</code>/<code>{# #}</code>) syntax highlighting inside
+        Ansible YAML are also available (Ansible Companion Pro).</p>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.plugins.yaml</depends>
 
     <actions>
         <group id="AnsibleCompanion.VaultActions" text="Ansible Vault" popup="true">
@@ -29,4 +32,12 @@
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </group>
     </actions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileTypeOverrider implementation="dev.gaphunter.ansiblecompanion.detection.AnsibleFileTypeOverrider"/>
+        <completion.contributor language="yaml"
+                                 implementationClass="dev.gaphunter.ansiblecompanion.completion.AnsibleModuleCompletionContributor"/>
+        <annotator language="yaml"
+                   implementationClass="dev.gaphunter.ansiblecompanion.completion.JinjaHighlightingAnnotator"/>
+    </extensions>
 </idea-plugin>
