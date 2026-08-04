@@ -359,3 +359,55 @@ inspect it directly with `javap -p` (signature) and `javap -p -v`
 `DataContext`-losing regression (attempt 3 above) that would have taken
 another full 15-minute `verifyPlugin` cycle — or worse, gone unnoticed
 since it doesn't fail verification at all — to discover any other way.
+
+## Round 8 (2026-08-04) — FQCN completion narrowed to task-level keys, closing the Round 2 follow-up
+
+**What was still open:** Round 2 fixed the "never fires for a brand-new
+task" case but explicitly left the opposite problem documented, not
+fixed: `isCompletingYamlKey()` fired for ANY `YAMLKeyValue`-shaped
+position, including a nested module-parameter key one level deeper
+(`copy:\n  <caret>` suggested FQCN modules, which makes no sense inside
+a `copy:` block).
+
+**Fix:** replaced `isCompletingYamlKey()` with a new, separately
+testable `YamlKeyPositionDetector.isCompletingTopLevelTaskKey()`. It
+walks every `YAMLKeyValue` between the cursor and the nearest enclosing
+`YAMLSequenceItem` (the task boundary); if the cursor sits inside any of
+those key-values' VALUE subtree — not just its key — it's nested under
+that key, so it isn't the task's own key. This correctly classifies both
+"typing the nested key's name" and "typing the nested key's value" as
+nested, because either way the walk eventually reaches the outer key
+(e.g. `copy`) and finds the cursor inside *its* value.
+
+**Verified, not just hand-reasoned:** whether `copy:` followed by a
+more-indented blank line already parses with an (empty) mapping value,
+or leaves the position ambiguous until real content exists, is parser
+behavior that shouldn't be guessed. Real PSI tests
+(`YamlKeyPositionDetectorTest`) reproduce the exact `copy:\n  <caret>`
+case plus 8 others (brand-new task, existing-sibling task key, nested
+key name, nested key value, second nesting level, outside any task
+sequence) against the real YAML parser via `BasePlatformTestCase`. Two
+rounds of test-writing bugs surfaced along the way, worth noting since
+they look like detector bugs at first glance but weren't:
+1. `PsiFile.findElementAt(caretOffset)` returns **null** when the caret
+   sits at true end-of-file/end-of-line with nothing after it —
+   `NullPointerException` in 6 tests, not a detector problem.
+2. After fixing that with an offset-1 fallback, 2 tests still failed —
+   `findElementAt` on bare trailing *whitespace* resolves to a PSI leaf
+   whose ancestor chain doesn't reliably reflect the parser's real
+   nesting intent (a real completion session never hits this, because
+   the platform always inserts a dummy identifier token at the cursor
+   before parsing). Fixed by having the test helper replace the
+   `<caret>` marker with a literal character instead of just recording
+   its position, guaranteeing a real leaf there every time — the same
+   thing real completion effectively does.
+
+**Verified:** `./gradlew test` green (52/52, including all 9 new
+`YamlKeyPositionDetectorTest` cases) after the fix.
+
+**Lesson:** the same one from Round 2's own writeup, generalized — an
+in-progress/ambiguous parse position is often structurally different
+from a "settled" one, and this applies to *test fixtures* too, not just
+the production code under test. A test built against bare whitespace or
+end-of-file isn't automatically a faithful stand-in for what the real
+platform feature sees at that same cursor position.

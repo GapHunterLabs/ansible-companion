@@ -4,6 +4,18 @@
 
 ## [Unreleased]
 
+## [0.1.6]
+
+### Fixed
+
+- FQCN completion no longer fires inside a nested module-parameter key
+  (e.g. `copy:\n  <caret>`) -- it's now scoped to a task's own key only
+  (`- ansible.builtin.<caret>` or a fresh `- name: x\n  <caret>` line),
+  via a new `YamlKeyPositionDetector` that walks every key-value between
+  the cursor and the enclosing task, verified against the real YAML PSI
+  parser (not just hand-reasoned) with tests covering the exact
+  `copy:`/nested-parameter repro from `KNOWN_ISSUES.md`.
+
 ## [0.1.5]
 
 ### Added
@@ -105,7 +117,8 @@ see `KNOWN_ISSUES.md` for full root causes:
   YAML.
 - Role support, multi-environment variable preview.
 
-[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.5...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.6...HEAD
+[0.1.6]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.5...0.1.6
 [0.1.5]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.4...0.1.5
 [0.1.4]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.2...0.1.3

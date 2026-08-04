@@ -7,12 +7,8 @@ import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.completion.CompletionType
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.patterns.PlatformPatterns
-import com.intellij.psi.PsiElement
-import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ProcessingContext
 import dev.gaphunter.ansiblecompanion.detection.AnsibleFileDetector
-import org.jetbrains.yaml.psi.YAMLKeyValue
-import org.jetbrains.yaml.psi.YAMLSequenceItem
 
 /**
  * FQCN-aware completion (`ansible.builtin.*`), the paid v0.2 feature.
@@ -37,10 +33,9 @@ import org.jetbrains.yaml.psi.YAMLSequenceItem
  * this fire NEVER, not even the unlicensed upsell item, for exactly the
  * most common case: `- ansible.builtin.<caret>` on a fresh task).
  *
- * Still NOT narrowed to "specifically a top-level task key, not a nested
- * module-parameter key" (e.g. it still fires inside `copy:\n  <caret>`,
- * once a YAMLKeyValue already exists) -- left as a known follow-up, see
- * README and KNOWN_ISSUES.md.
+ * Narrowed to a task's own key (`- ansible.builtin.<caret>` or
+ * `- name: x\n  <caret>`), not a nested module-parameter key
+ * (`copy:\n  <caret>`) -- see [YamlKeyPositionDetector].
  */
 class AnsibleModuleCompletionContributor : CompletionContributor() {
     init {
@@ -64,7 +59,7 @@ class AnsibleModuleCompletionContributor : CompletionContributor() {
                     ) {
                         return
                     }
-                    if (!isCompletingYamlKey(parameters.position)) return
+                    if (!YamlKeyPositionDetector.isCompletingTopLevelTaskKey(parameters.position)) return
 
                     // A CompletionResultSet's default matching requires the
                     // lookup string to START WITH whatever the user already
@@ -88,20 +83,6 @@ class AnsibleModuleCompletionContributor : CompletionContributor() {
                 }
             },
         )
-    }
-
-    private fun isCompletingYamlKey(position: PsiElement): Boolean {
-        val keyValue = PsiTreeUtil.getParentOfType(position, YAMLKeyValue::class.java, false)
-        if (keyValue != null) {
-            val key = keyValue.key ?: return true // no key parsed yet -> treat as key position
-            return PsiTreeUtil.isAncestor(key, position, false)
-        }
-        // A brand-new task ("- ansible.builtin.<caret>") has no ":" typed
-        // yet, so YAML hasn't parsed a YAMLKeyValue at all -- it's still a
-        // bare scalar inside a YAMLSequenceItem. This is exactly a
-        // top-level task's module-key position, so accept it here instead
-        // of falling through to "not a key position".
-        return PsiTreeUtil.getParentOfType(position, YAMLSequenceItem::class.java, false) != null
     }
 
     /**
