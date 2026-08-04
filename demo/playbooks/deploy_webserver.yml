@@ -1,0 +1,41 @@
+---
+- name: Deploy Acme Corp web tier
+  hosts: webservers
+  become: true
+  vars:
+    app_release: "{{ lookup('env', 'ACME_RELEASE') | default('stable', true) }}"
+    nginx_worker_processes: "{{ ansible_processor_vcpus | default(2) }}"
+
+  tasks:
+    - name: Ensure nginx is installed
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+
+    - name: Render nginx site config from template
+      ansible.builtin.template:
+        src: templates/acme-site.conf.j2
+        dest: /etc/nginx/sites-available/acme-{{ app_release }}.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Deploy application archive
+      ansible.builtin.unarchive:
+        src: "builds/acme-app-{{ app_release }}.tar.gz"
+        dest: /opt/acme/current
+        remote_src: false
+      register: deploy_result
+
+    - name: Report deployment outcome
+      ansible.builtin.debug:
+        msg: "Deployed {{ app_release }} -> changed={{ deploy_result.changed }}"
+      when: deploy_result is defined
+
+  handlers:
+    - name: Reload nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded

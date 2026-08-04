@@ -7,7 +7,7 @@ import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
-import dev.gaphunter.ansiblecompanion.detection.AnsibleYamlFileType
+import dev.gaphunter.ansiblecompanion.detection.AnsibleFileDetector
 
 /**
  * Highlights `{{ }}`/`{% %}`/`{# #}` Jinja2 regions inside Ansible YAML
@@ -20,14 +20,20 @@ import dev.gaphunter.ansiblecompanion.detection.AnsibleYamlFileType
  * needing to reason about YAML's quoting/escaping rules (a double-quoted
  * scalar's "logical" text and its raw source text differ), and it means
  * this file has no compile-time dependency on YAML-plugin-specific PSI
- * classes at all -- only `AnsibleYamlFileType` (from `detection/`) needs
- * that. `element.firstChild != null` is used to skip composite (non-leaf)
- * nodes, since visiting every level of the PSI tree would re-scan and
- * re-annotate the same text repeatedly.
+ * classes at all. `element.firstChild != null` is used to skip composite
+ * (non-leaf) nodes, since visiting every level of the PSI tree would
+ * re-scan and re-annotate the same text repeatedly.
  *
- * Register with `language="yaml"` on the `<annotator>` extension when
- * reactivating, so the platform only ever invokes this for YAML files
- * instead of checking `containingFile.fileType` against every language.
+ * Registered with `language="yaml"` on the `<annotator>` extension so the
+ * platform only ever invokes this for YAML files. Deliberately re-runs
+ * [AnsibleFileDetector] directly instead of checking
+ * `containingFile.fileType == AnsibleYamlFileType`: confirmed live
+ * (2026-07-30) that `AnsibleFileTypeOverrider`'s result and a PSI file's
+ * cached `FileType` can disagree for the lifetime of an already-open
+ * `FileViewProvider` (the override applies at the `VirtualFile` level;
+ * PSI-based consumers can keep seeing the pre-override `FileType`), so
+ * FileType identity is not a reliable gate for either this annotator or
+ * [AnsibleModuleCompletionContributor].
  */
 object AnsibleHighlighting {
     val JINJA_EXPRESSION: TextAttributesKey = TextAttributesKey.createTextAttributesKey(
@@ -61,7 +67,17 @@ private object LicenseCache {
 class JinjaHighlightingAnnotator : Annotator {
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
         if (element.firstChild != null) return
-        if (element.containingFile?.fileType != AnsibleYamlFileType) return
+        val file = element.containingFile ?: return
+        val virtualFile = file.virtualFile ?: return
+        // Same reasoning as AnsibleModuleCompletionContributor: don't trust
+        // file.fileType == AnsibleYamlFileType, it can lag behind
+        // AnsibleFileTypeOverrider's result for the lifetime of an
+        // already-open PSI file. Re-run the same detector directly instead.
+        if (!AnsibleFileDetector.pathAloneSignalsAnsible(virtualFile.path) &&
+            !AnsibleFileDetector.looksLikeAnsible(virtualFile.path, file.text)
+        ) {
+            return
+        }
         if (!LicenseCache.isLicensedNow()) return
 
         val elementStart = element.textRange.startOffset

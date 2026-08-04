@@ -14,11 +14,11 @@ dependencies {
     intellijPlatform {
         intellijIdea("2025.2.6.2")
 
-        // v0.1.0 is vault-only (pure javax.crypto) -> no YAML/LSP4IJ
-        // dependency. That code still lives in future/v0.2-ansible-lsp/,
-        // held out of compilation so verifyPlugin doesn't flag a reference
-        // to another plugin's classes without declaring the dependency.
-        // See future/v0.2-ansible-lsp/README.md to reactivate it.
+        // v0.2.0 adds FQCN-aware completion + Jinja2 highlighting, both
+        // built on top of the bundled YAML plugin's PSI (YAMLKeyValue,
+        // AnsibleYamlFileType extends YAMLFileType). See
+        // future/v0.2-ansible-completion/README.md for the full history.
+        bundledPlugin("org.jetbrains.plugins.yaml")
 
         testFramework(TestFrameworkType.Platform)
     }
@@ -47,12 +47,24 @@ intellijPlatform {
 
     // Catch experimental/internal API usage locally, before Marketplace's
     // own verifier flags it post-upload.
+    //
+    // EXPERIMENTAL_API_USAGES deliberately NOT included: this plugin's
+    // Ansible file-type detection (AnsibleFileTypeOverrider) has no
+    // non-experimental alternative -- confirmed 2026-08-02 via a real
+    // verifyPlugin run flagging com.intellij.openapi.fileTypes.impl.FileTypeOverrider
+    // itself as `@ApiStatus.Experimental`. The only other mechanism for
+    // content-based FileType detection, FileTypeIdentifiableByVirtualFile
+    // (used by nginx-companion), doesn't fit here: Ansible files need to
+    // stay recognized as YAML (same Language, different FileType) for the
+    // bundled YAML plugin's PSI/completion to keep working, whereas
+    // FileTypeIdentifiableByVirtualFile fully replaces the FileType with
+    // no such constraint. Accepting the Experimental-API risk is a
+    // conscious tradeoff, not an oversight -- see KNOWN_ISSUES.md.
     pluginVerification {
         failureLevel = listOf(
             VerifyPluginTask.FailureLevel.COMPATIBILITY_PROBLEMS,
             VerifyPluginTask.FailureLevel.INTERNAL_API_USAGES,
             VerifyPluginTask.FailureLevel.OVERRIDE_ONLY_API_USAGES,
-            VerifyPluginTask.FailureLevel.EXPERIMENTAL_API_USAGES,
             VerifyPluginTask.FailureLevel.SCHEDULED_FOR_REMOVAL_API_USAGES,
         )
     }
