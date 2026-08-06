@@ -68,4 +68,21 @@ intellijPlatform {
             VerifyPluginTask.FailureLevel.SCHEDULED_FOR_REMOVAL_API_USAGES,
         )
     }
+
+    // Publish token read from a LOCAL, non-repo Gradle property
+    // (~/.gradle/gradle.properties, never committed) -- never hardcoded
+    // here. Falls back to null (task fails loudly asking for the token)
+    // if that file doesn't define it, rather than silently no-op-ing.
+    publishing {
+        token.set(providers.gradleProperty("gapHunterLabs.marketplace.token"))
+    }
+
+    // Same pattern: signing material lives only in the local, non-repo
+    // gradle.properties (self-signed cert generated once for the whole
+    // catalog, 10-year validity).
+    signing {
+        certificateChain.set(providers.gradleProperty("gapHunterLabs.marketplace.certificateChain"))
+        privateKey.set(providers.gradleProperty("gapHunterLabs.marketplace.privateKey"))
+        password.set(providers.gradleProperty("gapHunterLabs.marketplace.privateKeyPassword"))
+    }
 }
