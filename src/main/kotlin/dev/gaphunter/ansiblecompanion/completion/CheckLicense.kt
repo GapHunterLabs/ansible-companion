@@ -41,7 +41,7 @@ import java.util.Base64
  */
 object CheckLicense {
     /** Must be the same value as plugin.xml's `<product-descriptor code="...">` tag. */
-    private const val PRODUCT_CODE = "[REDACTED-PRODUCT-CODE]"
+    private const val PRODUCT_CODE = "PANSIBLECOMPANI"
 
     private const val KEY_PREFIX = "key:"
     private const val STAMP_PREFIX = "stamp:"
