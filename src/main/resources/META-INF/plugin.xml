@@ -18,7 +18,7 @@
          enrolled in Paid or Freemium and keep semver unchanged.
          Do not use a literal double hyphen anywhere in this comment, the
          XML spec forbids it inside comments and patchPluginXml will crash. -->
-    <product-descriptor code="[REDACTED-PRODUCT-CODE]" release-date="20260804" release-version="20261" optional="true"/>
+    <product-descriptor code="PANSIBLECOMPANI" release-date="20260804" release-version="20261" optional="true"/>
     <description><![CDATA[
         <p>Encrypt and decrypt Ansible Vault (1.1/AES256 format) directly in the editor,
         without leaving the IDE and without depending on <code>ansible-vault</code> being
