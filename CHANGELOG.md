@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+## [2026.1.1]
+
+### Fixed
+
+- Removed internal Marketplace account/support details that had been
+  mistakenly documented in this changelog and in `plugin.xml` — no
+  user-facing change.
+
 ## [2026.1.0]
 
 ### Changed
@@ -139,7 +147,8 @@ see `KNOWN_ISSUES.md` for full root causes:
   YAML.
 - Role support, multi-environment variable preview.
 
-[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.1.0...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.1.1...HEAD
+[2026.1.1]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.1.0...2026.1.1
 [2026.1.0]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.5...2026.1.0
 [0.1.5]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.4...0.1.5
 [0.1.4]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.3...0.1.4
