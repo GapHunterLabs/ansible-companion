@@ -4,12 +4,9 @@
     <name>Ansible Companion</name>
     <vendor>Gap Hunter Labs</vendor>
     <!-- Required for the Freemium pricing model JetBrains approved for this
-         plugin (Marketplace support ticket #[REDACTED-TICKET], 2026-08-04): "Please
-         proceed with preparing the plugin for becoming paid... upload a new
-         update with the additional parameters." optional="true" is what
-         makes this Freemium rather than fully Paid: the plugin still
-         installs and runs with no license at all, only the Pro-tier
-         features gate on CheckLicense.isLicensed().
+         plugin. optional="true" is what makes this Freemium rather than
+         fully Paid: the plugin still installs and runs with no license at
+         all, only the Pro-tier features gate on CheckLicense.isLicensed().
          release-version must share its leading digits with the plugin's
          own version (confirmed by a real, local verifyPlugin failure, not
          guessed): 20261 splits into year 2026 and minor 1, so the plugin

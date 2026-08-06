@@ -3,10 +3,11 @@
 **Business model (decided 2026-07-23):** v0.1.x (vault encrypt/decrypt)
 stays free forever — it's the acquisition hook and the thing driving
 Marketplace reviews. v0.2.0 (this folder) is the paid tier: "Ansible
-Companion Pro". Suggested price $15-19 USD/year (well under the paid
-incumbent's $59+/year), with a 30-day free trial handled automatically by
-the IDE once the plugin is enrolled for Marketplace monetization (see
-"What you still need to do" below).
+Companion Pro", priced well under the paid incumbent, with a 30-day
+free trial handled automatically by the IDE once the plugin is
+enrolled for Marketplace monetization (see "What you still need to
+do" below). Internal pricing/account details live outside this public
+repo, not in this file.
 
 ## Why this isn't wrapping `ansible-language-server` anymore
 
@@ -46,7 +47,7 @@ git history) rather than kept around unused.
 |---|---|
 | `completion/AnsibleModuleIndex.kt` | Loads a bundled JSON index of `ansible.builtin.*` module names + short descriptions. Data fetched once from the real `ansible/ansible` GitHub repo (the modules directory under `lib/ansible`, stable-2.17 branch, 69 modules with real descriptions after dropping 2 internal/deprecated ones) — see `resources/ansible_builtin_modules.json`. Hand-rolled minimal JSON parser (flat string map only) instead of a new dependency, same call as `AnsibleVaultCipher`/`ArchiveExtractor`. |
 | `completion/AnsibleModuleCompletionContributor.kt` | A `CompletionContributor` scoped to `AnsibleYamlFileType` (from `detection/`, unchanged from the LSP attempt — still needed to avoid hijacking Kubernetes/Helm/Docker-compose YAML) **and** to YAML mapping-key positions specifically (`isCompletingYamlKey`, via `PsiTreeUtil`/`YAMLKeyValue`) so module names don't clutter completion while typing a value or comment. Not yet narrowed further to "top-level task key only" (see the class's own doc comment) — that needs live `runIde` verification to get right, not more guessing. |
-| `completion/CheckLicense.kt` | JetBrains's own reference license-verification code (ported from `github.com/JetBrains/marketplace-makemecoffee-plugin`, `CheckLicense.java`, fetched and diffed byte-for-byte for the two embedded root certificates), gating the completion contributor. `PRODUCT_CODE` is the real value (`[REDACTED-PRODUCT-CODE]`) — see below. |
+| `completion/CheckLicense.kt` | JetBrains's own reference license-verification code (ported from `github.com/JetBrains/marketplace-makemecoffee-plugin`, `CheckLicense.java`, fetched and diffed byte-for-byte for the two embedded root certificates), gating the completion contributor. `PRODUCT_CODE` is set to the real Marketplace-assigned value in `plugin.xml`/`CheckLicense.kt` directly, not repeated here. |
 | `completion/JinjaExpressionDetector.kt` | Pure text scan for `{{ }}`/`{% %}`/`{# #}` Jinja2 regions inside a string, plus malformed-block detection (unterminated openers, stray closers) — addresses complaint #3. No real Jinja2 engine, no Python. Explicitly verified NOT to false-positive on YAML's own `{key: value}` flow-mapping syntax. |
 | `completion/JinjaHighlightingAnnotator.kt` | A generic-`PsiElement`-based `Annotator` (deliberately avoids depending on YAML-specific PSI types — see its doc comment) that highlights `JinjaExpressionDetector`'s regions using `DefaultLanguageHighlighterColors.TEMPLATE_LANGUAGE_COLOR`, gated behind the same license check with a 60s cache (`LicensingFacade` calls aren't free to make on every keystroke). |
 | `completion-tests/AnsibleModuleIndexTest.kt` | 6 JUnit tests: JSON parsing (escapes, empty object, sorting), FQCN formatting, and a real load of the bundled resource asserting sane content (50-200 modules, `copy`/`debug`/`command` present, every entry non-blank). |
@@ -87,15 +88,17 @@ a glob pattern, a code snippet — appear inside a Kotlin comment.**
 
 ## Marketplace monetization enrollment — applied, not yet approved (2026-07-23)
 
-"Gap Hunter Labs" applied on the Monetization tab for the **FREEMIUM**
+Gap Hunter Labs applied on the Monetization tab for the **FREEMIUM**
 pricing model (the plugin itself stays free to install; only the v0.2
 features go behind a license — as opposed to the plain "PAID" model,
-which would paywall everything from install). JetBrains assigned the real
-product code **`[REDACTED-PRODUCT-CODE]`** immediately, now in
-`CheckLicense.PRODUCT_CODE` (was a placeholder before this) — but per
-JetBrains's own text on that page, **"After applying for the Freemium or
-Fully Paid pricing model, you will be contacted by our Support team"**,
-so this isn't fully approved yet, just applied for.
+which would paywall everything from install). JetBrains assigned a
+real product code immediately, now set in `CheckLicense.PRODUCT_CODE`
+(was a placeholder before this) — but per JetBrains's own text on that
+page, **"After applying for the Freemium or Fully Paid pricing model,
+you will be contacted by our Support team"**, so this isn't fully
+approved yet, just applied for. Account/vendor-specific identifiers
+(the real product code, organization slug, etc.) live in the actual
+`plugin.xml`/Marketplace vendor console, not documented here.
 
 JetBrains's own checklist for what's left (shown on that same page,
 reproduced here so it doesn't get lost):
@@ -104,10 +107,10 @@ reproduced here so it doesn't get lost):
 2. Obfuscate the plugin (optional — skip).
 3. ~~Implement license verification calls.~~ **Done** — `CheckLicense.kt`.
 4. ~~Create an organization and add banking information in the 'Vendor
-   Information' tab.~~ **Done (2026-07-23)** — Trader Details filled in
-   with banking info, document, etc. Still need to confirm plugin.xml's
-   `<vendor>` ends up matching whatever `organization_id` this created
-   (step 8 below) once that's visible on the Marketplace side.
+   Information' tab.~~ **Done (2026-07-23).** Still need to confirm
+   plugin.xml's `<vendor>` ends up matching the vendor's
+   Marketplace-assigned `organization_id` (step 8 below) once that's
+   visible on the Marketplace side.
 5. Prepare the plugin on the Marketplace demo to test changes (optional).
 6. Make changes in `plugin.xml` (see below — do this only when v0.2 ships).
 7. Set the product descriptor's `code`, `release-date`, `release-version`,
@@ -118,21 +121,20 @@ reproduced here so it doesn't get lost):
    before reading JetBrains's own checklist; it changes the
    `<product-descriptor>` tag below.
 8. ~~Check that plugin.xml's `<vendor>` matches the `organization_id`.~~
-   **Checked (2026-07-23): they don't match yet.** The organization's ID
-   is the URL slug `[REDACTED-ORG-SLUG]` (from
-   `plugins.jetbrains.com/vendor/[REDACTED-ORG-SLUG]/edit/vendor`), lowercase
-   and hyphenated. Live `plugin.xml` currently has
-   `<vendor>Gap Hunter Labs</vendor>` — display-case, with a space. Do
-   **not** change this in the live v0.1.x `plugin.xml` right now (same
-   reasoning as the `<product-descriptor>` tag: changing vendor
-   metadata while v0.1.0/0.1.1/0.1.2 are mid-moderation is an
-   unnecessary risk to an unrelated, already-submitted change). Change
-   it to `[REDACTED-ORG-SLUG]` in the same batch of edits as adding
-   `<product-descriptor>`, when v0.2 actually ships.
-9. Set up pricing, offers, and coupons (this is where the actual
-   $15-19/year price and 30-day trial get configured). **Confirmed
-   2026-07-23: not available yet because both the plugin and the vendor
-   account are still under review** (per JetBrains's own
+   **Checked (2026-07-23): they don't match yet.** The organization's
+   Marketplace-assigned URL slug is lowercase and hyphenated (the
+   actual value lives in the vendor console, not here). Live
+   `plugin.xml` currently has `<vendor>Gap Hunter Labs</vendor>` —
+   display-case, with a space. Do **not** change this in the live
+   v0.1.x `plugin.xml` right now (same reasoning as the
+   `<product-descriptor>` tag: changing vendor metadata while
+   v0.1.0/0.1.1/0.1.2 are mid-moderation is an unnecessary risk to an
+   unrelated, already-submitted change). Change it to match the real
+   slug in the same batch of edits as adding `<product-descriptor>`,
+   when v0.2 actually ships.
+9. Set up pricing, offers, and coupons. **Confirmed 2026-07-23: not
+   available yet because both the plugin and the vendor account are
+   still under review** (per JetBrains's own
    [Preparing your plugin for publication](https://plugins.jetbrains.com/docs/marketplace/prepare-your-plugin-for-publication.html)
    docs) — nothing to do here but wait.
 10. Release the plugin.
@@ -146,8 +148,8 @@ and
 docs rather than guessing further:
 
 - `code`: max 15 chars, must start with `P`, ALL CAPS, no digits/symbols.
-  `[REDACTED-PRODUCT-CODE]` is exactly 15 chars and satisfies this — confirmed
-  correct, not just assigned-and-hoped.
+  This plugin's assigned code satisfies this — confirmed correct, not
+  just assigned-and-hoped.
 - `release-date`: `YYYYMMDD`.
 - `release-version`: **not just an incrementing integer** — my earlier
   placeholder (`release-version="1"`) is invalid. Rules: at least 2
@@ -217,11 +219,12 @@ in order:
 The remaining checklist items are entirely about the paid-tier rollout
 mechanics, not this folder's code:
 
-1. Add `<product-descriptor code="[REDACTED-PRODUCT-CODE]" release-date="YYYYMMDD" release-version="TBD" optional="true"/>`
-   to `plugin.xml` (see exact rules above for `release-version` — don't
-   reuse a placeholder literally), **and** change `<vendor>` from
-   `Gap Hunter Labs` to `[REDACTED-ORG-SLUG]` in the same edit (checklist
-   item 8, confirmed above). Deliberately **not** done in this session's
+1. Add `<product-descriptor code="..." release-date="YYYYMMDD" release-version="TBD" optional="true"/>`
+   to `plugin.xml` with the real assigned code (see exact rules above
+   for `release-version` — don't reuse a placeholder literally),
+   **and** change `<vendor>` from `Gap Hunter Labs` to the real
+   Marketplace organization slug in the same edit (checklist item 8,
+   confirmed above). Deliberately **not** done in this session's
    `0.1.5` — this is a separate, explicit step for whenever the paid
    tier actually goes live on Marketplace, not bundled into "ship the
    free-tier-visible feature code."
