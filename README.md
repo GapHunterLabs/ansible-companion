@@ -53,7 +53,7 @@ forever.
 ### Enterprise / Team Licensing
 
 Need volume licensing for your team, custom detection rules, or
-priority support? Contact us at **kennyj.diazm@gmail.com**.
+priority support? Contact us at **gaphunterlabs@gmail.com**.
 
 Role support and multi-environment variable preview aren't built yet.
 
