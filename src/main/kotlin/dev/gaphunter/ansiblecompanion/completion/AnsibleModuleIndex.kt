@@ -3,28 +3,38 @@ package dev.gaphunter.ansiblecompanion.completion
 import java.io.InputStream
 
 /**
- * Static, bundled index of `ansible.builtin.*` module names + short
- * descriptions -> no dependency on Node, a language server, or a real
- * Ansible/Python install to offer FQCN-aware completion (complaint #2).
- * This directly replaces the abandoned LSP4IJ/ansible-language-server
- * approach (see the README in this folder for why): that server refuses
- * to actually run outside WSL on Windows and shells out to `ansible`,
+ * Static, bundled index of module names + short descriptions -> no
+ * dependency on Node, a language server, or a real Ansible/Python
+ * install to offer FQCN-aware completion (complaint #2). This directly
+ * replaces the abandoned LSP4IJ/ansible-language-server approach (see
+ * the README in this folder for why): that server refuses to actually
+ * run outside WSL on Windows and shells out to `ansible`,
  * `ansible-lint`, `ansible-config` for exactly this kind of data — none
  * of which work for this plugin's real users. This index is just data,
  * fetched once from each module's DOCUMENTATION docstring in the real
- * `ansible/ansible` GitHub repository (the modules directory under
- * lib/ansible, stable-2.17 branch) and bundled as a plugin resource, so
- * it works identically on every OS with zero runtime dependency.
+ * upstream GitHub repositories and bundled as a plugin resource, so it
+ * works identically on every OS with zero runtime dependency.
+ *
+ * Covers three namespaces (2026-08-16, added `community.general` and
+ * `ansible.posix` alongside the original `ansible.builtin`): fetched
+ * from `ansible/ansible` (stable-2.17, `lib/ansible/modules`),
+ * `ansible-collections/community.general` (`main`,
+ * `plugins/modules`), and `ansible-collections/ansible.posix` (`main`,
+ * `plugins/modules`) respectively. Deprecated modules (a real
+ * `deprecated:` block in their own `DOCUMENTATION` docstring) are
+ * excluded at fetch time, same rule already applied to the original
+ * builtin set.
  */
 data class AnsibleModule(
+    val namespace: String,
     val shortName: String,
     val description: String,
 ) {
-    val fqcn: String get() = "ansible.builtin.$shortName"
+    val fqcn: String get() = "$namespace.$shortName"
 }
 
 object AnsibleModuleIndex {
-    private const val RESOURCE_PATH = "/ansible_builtin_modules.json"
+    private const val RESOURCE_PATH = "/ansible_module_index.json"
 
     val modules: List<AnsibleModule> by lazy {
         val stream = javaClass.getResourceAsStream(RESOURCE_PATH)
@@ -32,12 +42,24 @@ object AnsibleModuleIndex {
         parse(stream)
     }
 
-    /** Exposed separately from [modules] so tests can feed a synthetic JSON without touching the classpath. */
+    /**
+     * Exposed separately from [modules] so tests can feed a synthetic
+     * JSON without touching the classpath. Each JSON key is the
+     * module's full FQCN (`namespace.namespace.shortName`, e.g.
+     * `ansible.builtin.copy` or `community.general.docker_container`)
+     * -- split on the LAST dot, since collection namespaces themselves
+     * contain a dot (`ansible.builtin`, `community.general`,
+     * `ansible.posix`) and module short names never do.
+     */
     fun parse(stream: InputStream): List<AnsibleModule> {
         val text = stream.bufferedReader(Charsets.UTF_8).readText()
         return parseJsonObject(text)
-            .map { (name, description) -> AnsibleModule(name, description) }
-            .sortedBy { it.shortName }
+            .map { (fqcn, description) ->
+                val lastDot = fqcn.lastIndexOf('.')
+                check(lastDot > 0) { "Expected a namespaced key (namespace.module), got '$fqcn'" }
+                AnsibleModule(fqcn.substring(0, lastDot), fqcn.substring(lastDot + 1), description)
+            }
+            .sortedWith(compareBy({ it.namespace }, { it.shortName }))
     }
 
     /**

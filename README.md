@@ -43,19 +43,26 @@ The password is never saved or cached between uses.
 
 ## Ansible Companion Pro
 
-FQCN-aware completion for `ansible.builtin.*` modules and Jinja2
-(`{{ }}`/`{% %}`/`{# #}`) syntax highlighting inside Ansible YAML are
-available as an optional paid tier (file-type detection that doesn't
-hijack Kubernetes/Helm/Docker-compose YAML — the free tier's own
-detection already covers that). Vault encrypt/decrypt above stays free
-forever.
+- FQCN-aware completion — `ansible.builtin.*` (69 modules),
+  `community.general.*` (566 modules), and `ansible.posix.*` (14
+  modules), 649 total.
+- Jinja2 (`{{ }}`/`{% %}`/`{# #}`) syntax highlighting inside Ansible
+  YAML.
+- Ctrl+Click / Ctrl+B navigation from a role reference (`roles:` list
+  entry, or `include_role`/`import_role`'s `name:`) to that role's
+  `tasks/main.yml`.
+
+All available as an optional paid tier (file-type detection that
+doesn't hijack Kubernetes/Helm/Docker-compose YAML — the free tier's
+own detection already covers that). Vault encrypt/decrypt above stays
+free forever.
 
 ### Enterprise / Team Licensing
 
 Need volume licensing for your team, custom detection rules, or
 priority support? Contact us at **gaphunterlabs@gmail.com**.
 
-Role support and multi-environment variable preview aren't built yet.
+Multi-environment variable preview isn't built yet.
 
 ## Development
 
