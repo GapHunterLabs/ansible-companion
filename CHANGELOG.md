@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [2026.2.0]
+
 ### Added
 
 - Ctrl+Click / Ctrl+B navigation (Ansible Companion Pro) from a role
@@ -171,7 +173,8 @@ see `KNOWN_ISSUES.md` for full root causes:
   YAML.
 - Role support, multi-environment variable preview.
 
-[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.1.1...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.2.0...HEAD
+[2026.2.0]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.1.1...2026.2.0
 [2026.1.1]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.1.0...2026.1.1
 [2026.1.0]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.5...2026.1.0
 [0.1.5]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.4...0.1.5
