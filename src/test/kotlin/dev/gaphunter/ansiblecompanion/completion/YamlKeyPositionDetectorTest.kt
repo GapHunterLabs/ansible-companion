@@ -63,4 +63,42 @@ class YamlKeyPositionDetectorTest : BasePlatformTestCase() {
     fun testOutsideAnyTaskSequenceIsNotTopLevel() {
         assertFalse(isTopLevelAtCaret("some_var: <caret>"))
     }
+
+    // Real-world edge cases beyond the original 9 (Round 8) -- block/rescue/
+    // always nest a whole second task list one level deeper than a plain
+    // module parameter does, and a task-level key can legally appear before
+    // the module key instead of only after it (e.g. `when:` first).
+
+    fun testANewTaskInsideABlockIsTopLevel() {
+        // `block:`'s value is itself a task sequence, not a module
+        // parameter -- a fresh line inside it is a brand-new task, same as
+        // any other task-level position.
+        assertTrue(isTopLevelAtCaret("- name: wrap\n  block:\n    - <caret>"))
+    }
+
+    fun testAnFqcnPrefixOnANewTaskInsideABlockIsTopLevel() {
+        assertTrue(isTopLevelAtCaret("- name: wrap\n  block:\n    - ansible.builtin.<caret>"))
+    }
+
+    fun testANewTaskInsideARescueIsTopLevel() {
+        assertTrue(isTopLevelAtCaret("- name: wrap\n  block:\n    - ansible.builtin.debug: {}\n  rescue:\n    - <caret>"))
+    }
+
+    fun testAModuleParameterInsideATaskThatIsItselfInsideABlockIsNotTopLevel() {
+        // One level deeper than the block-nested task itself: a real module
+        // parameter, same shape as the plain (non-block) nested-parameter
+        // case already covered above.
+        assertFalse(isTopLevelAtCaret("- name: wrap\n  block:\n    - name: inner\n      copy:\n        <caret>"))
+    }
+
+    fun testATaskLevelKeyTypedBeforeTheModuleKeyIsTopLevel() {
+        // `when:` (or `loop:`, `tags:`, ...) can legally come before the
+        // module key instead of only after it -- the detector shouldn't
+        // assume the module key is always the first key in the task.
+        assertTrue(isTopLevelAtCaret("- name: x\n  when: some_cond\n  <caret>"))
+    }
+
+    fun testANewTaskAfterASiblingWithALoopKeyIsTopLevel() {
+        assertTrue(isTopLevelAtCaret("- name: x\n  ansible.builtin.copy:\n    src: a\n  loop: [1, 2]\n- <caret>"))
+    }
 }

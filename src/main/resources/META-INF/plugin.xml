@@ -27,9 +27,11 @@
         <p>Select plain text -> <b>Encrypt Selection as Ansible Vault</b>, or a
         <code>$ANSIBLE_VAULT;1.1;AES256</code> block -> <b>Decrypt Ansible Vault Selection</b>.
         Both available from the editor's context menu. The password is never saved or cached.</p>
-        <p>FQCN-aware completion for <code>ansible.builtin.*</code> modules and Jinja2
+        <p>FQCN-aware completion for <code>ansible.builtin.*</code>, <code>community.general.*</code>,
+        and <code>ansible.posix.*</code> modules (649 total), Jinja2
         (<code>{{ }}</code>/<code>{% %}</code>/<code>{# #}</code>) syntax highlighting inside
-        Ansible YAML are also available (Ansible Companion Pro).</p>
+        Ansible YAML, and Ctrl+Click navigation from a role reference to its
+        <code>tasks/main.yml</code> are also available (Ansible Companion Pro).</p>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
@@ -55,5 +57,6 @@
                                  implementationClass="dev.gaphunter.ansiblecompanion.completion.AnsibleModuleCompletionContributor"/>
         <annotator language="yaml"
                    implementationClass="dev.gaphunter.ansiblecompanion.completion.JinjaHighlightingAnnotator"/>
+        <gotoDeclarationHandler implementation="dev.gaphunter.ansiblecompanion.navigation.AnsibleRoleGotoDeclarationHandler"/>
     </extensions>
 </idea-plugin>

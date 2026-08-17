@@ -11,8 +11,9 @@ import com.intellij.util.ProcessingContext
 import dev.gaphunter.ansiblecompanion.detection.AnsibleFileDetector
 
 /**
- * FQCN-aware completion (`ansible.builtin.*`), the paid v0.2 feature.
- * Deliberately built as a static bundled index (AnsibleModuleIndex)
+ * FQCN-aware completion (`ansible.builtin.*`, `community.general.*`,
+ * `ansible.posix.*`), the paid v0.2 feature. Deliberately built as a
+ * static bundled index (AnsibleModuleIndex)
  * instead of wrapping `ansible-language-server` via LSP4IJ -- see this
  * folder's README for why that approach was abandoned (the language
  * server refuses to run outside WSL on Windows and shells out to real

@@ -411,3 +411,109 @@ from a "settled" one, and this applies to *test fixtures* too, not just
 the production code under test. A test built against bare whitespace or
 end-of-file isn't automatically a faithful stand-in for what the real
 platform feature sees at that same cursor position.
+
+## Round 9 (2026-08-16) — nested-key gap re-audited for real-world Ansible shapes: no bug found, closing the Round 8 follow-up
+
+**What was checked:** Round 8 closed the original `copy:\n  <caret>`
+nested-parameter repro, but only 9 cases were ever verified against the
+real parser. Six more real-world shapes were added and run against the
+actual YAML PSI (not hand-reasoned) before treating the gap as fully
+closed: a new task inside `block:`, an FQCN prefix on that same
+block-nested task, a new task inside `rescue:`, a module parameter one
+level *below* a block-nested task (i.e. two levels of nesting), a
+task-level key (`when:`) typed *before* the module key instead of only
+after it, and a new task added after a sibling that has its own
+`loop:` key.
+
+**Result:** all 6 pass with zero code changes —
+`YamlKeyPositionDetector.isCompletingTopLevelTaskKey()` already handles
+every one correctly. The reason, made explicit here since it wasn't
+obvious without checking: `block:`/`rescue:`/`always:`'s value is
+itself a `YAMLSequenceItem` list (of tasks), not a plain scalar/mapping
+module parameter — so `PsiTreeUtil.getParentOfType(position,
+YAMLSequenceItem::class.java, false)` finds the *innermost* enclosing
+sequence item (the block's own task list) as the walk's upper bound,
+and the walk from `position` up to that boundary never passes through
+the outer `block`/`rescue` `YAMLKeyValue` at all — so it's never
+mistaken for a nested module parameter. And because the detector never
+assumed key order (it walks from `position` upward, not from the
+task's first key downward), a task-level key like `when:` appearing
+before the module key doesn't confuse it either.
+
+**Verified:** `./gradlew test` — new
+`YamlKeyPositionDetectorTest` cases (block/rescue/nested-in-block/
+key-order) 6/6 green on first run, full suite green after, no
+regressions.
+
+**Lesson:** re-running "is this really closed?" against real-world
+shapes the original bug report didn't happen to mention (block/rescue
+task nesting, key order) is worth doing even when no bug is expected —
+this round is a documented negative result, not a fix, and that's a
+legitimate outcome worth recording so this exact question doesn't get
+re-asked and re-investigated from scratch later.
+
+## Round 10 (2026-08-16) — `AnsibleRoleGotoDeclarationHandler`: two real bugs found by the first test run, neither guessed in advance
+
+**Context:** new feature (Ctrl+Click navigation from a role reference —
+`roles:` list item or `include_role`/`import_role`'s `name:` — to
+`roles/<name>/tasks/main.yml`), the first concrete slice of "role
+support" from the CHANGELOG's long-standing "on hold" list. Written
+against real PSI/VFS APIs, then verified with real
+`BasePlatformTestCase` tests (project layout via `addFileToProject`,
+not hand-built) before assuming it worked — exactly this discipline is
+what caught both bugs below on the very first run, before any manual
+`runIde` session was needed.
+
+**Bug A — test helper, not production code: `<caret>` replaced with a
+literal `X` corrupted the identifier under test.** The
+`YamlKeyPositionDetectorTest` helper's pattern (replace `<caret>` with
+a throwaway character to guarantee a real PSI leaf at that offset,
+Round 8's own lesson) doesn't transfer safely to a caret sitting
+*inside* real, already-typed text — `<caret>nginx` became `Xnginx`, and
+`roleNameAt()` correctly returned `"Xnginx"` (not a bug in the
+production code, confirmed by a temporary debug log). Round 8's helper
+only ever placed `<caret>` at blank/EOF positions, where inserting a
+character doesn't corrupt anything meaningful — this test's shape is
+different enough that the same trick silently breaks the test data
+itself. **Fix:** strip the marker instead of substituting a character;
+a role name is never blank, so `findElementAt` at that offset already
+resolves to a real leaf without needing the substitution trick at all.
+
+**Bug B — real production bug: `ProjectFileIndex.getContentRootForFile()`
+returning null collapsed the upward directory search to zero
+iterations.** `findRoleTasksMain()`'s original fallback
+(`fileIndex.getContentRootForFile(from) ?: from.parent`) set the
+search's upper bound to `from.parent` itself whenever the content root
+lookup returned null — confirmed via a temporary debug log
+(`getContentRootForFile` returns null for `BasePlatformTestCase`'s
+lightweight temp-file fixtures, which have no real module/content-root
+wiring) that this collapsed the `while` loop's `dir == contentRoot`
+check to true on its very first iteration, so the search never climbed
+past the file's own immediate directory — `roles/` one level up (the
+project root in every test case) was never reached. Not just a test
+artifact: a real project's content root doesn't reliably sit exactly at
+`roles/`'s parent either (e.g. a playbook under
+`environments/prod/site.yml` several directories below both `roles/`
+and any content root), so the same collapse could happen for real
+users too, silently returning "role not found" for a role that exists.
+**Fix:** stopped depending on `ProjectFileIndex` for the search
+boundary entirely — walk from the file's directory up to VFS root,
+bounded by a fixed `MAX_ANCESTOR_DEPTH` (32) instead of a content-root
+lookup that isn't guaranteed to align with where `roles/` actually
+lives.
+
+**Verified:** `./gradlew clean test --rerun` (forced, not relying on
+`UP-TO-DATE` caching) — `AnsibleRoleGotoDeclarationHandlerTest` 8/8,
+full suite 58/58, zero regressions.
+
+**Lesson:** two independent, unrelated bugs (one in test scaffolding,
+one in production search-boundary logic) surfaced from a single first
+test run, neither type guessable from reading the code — this is the
+same value real `runIde`/platform-test verification has delivered
+every other round in this log, just this time via `BasePlatformTestCase`
+instead of a manual sandbox session. Also: a "reasonable-sounding"
+platform API (`ProjectFileIndex.getContentRootForFile`) can return null
+or an unhelpful value even outside test fixtures — don't let an
+optimization/precision attempt (bounding a directory walk to "the real
+content root") become the thing that silently breaks the feature when
+that API doesn't return what was assumed.

@@ -4,6 +4,30 @@
 
 ## [Unreleased]
 
+### Added
+
+- Ctrl+Click / Ctrl+B navigation (Ansible Companion Pro) from a role
+  reference straight to that role's `tasks/main.yml` — works from a
+  `roles:` list entry and from `include_role`/`import_role`'s `name:`
+  key. The first concrete piece of "role support", listed as pending
+  since the very first release.
+- FQCN-aware completion (Ansible Companion Pro) now also covers
+  `community.general` (566 modules, 11 deprecated modules excluded at
+  fetch time) and `ansible.posix` (14 modules), on top of the existing
+  69 `ansible.builtin` modules — 649 total, up from 69. Each module's
+  description is its real `short_description` from the module's own
+  `DOCUMENTATION` docstring in the upstream
+  `ansible-collections/community.general` and
+  `ansible-collections/ansible.posix` repositories (`main` branch),
+  fetched the same way the original `ansible.builtin` set was.
+
+### Changed
+
+- `AnsibleModule` now carries an explicit `namespace` field instead of
+  hardcoding `ansible.builtin.` as the FQCN prefix — internal-only
+  change, no user-facing behavior difference for existing
+  `ansible.builtin.*` completions.
+
 ## [2026.1.1]
 
 ### Fixed
