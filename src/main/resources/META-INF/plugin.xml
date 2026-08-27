@@ -52,6 +52,7 @@
     </actions>
 
     <extensions defaultExtensionNs="com.intellij">
+        <notificationGroup id="Ansible Companion" displayType="BALLOON"/>
         <fileTypeOverrider implementation="dev.gaphunter.ansiblecompanion.detection.AnsibleFileTypeOverrider"/>
         <completion.contributor language="yaml"
                                  implementationClass="dev.gaphunter.ansiblecompanion.completion.AnsibleModuleCompletionContributor"/>

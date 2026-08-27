@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [2026.2.1]
+
+### Added
+
+- Review/star CTA: after 5 successful Vault encrypt/decrypt operations
+  (never counted for a cancelled dialog or a failed decrypt), a
+  one-time notification asks whether to rate the plugin on
+  Marketplace, with a permanent "Don't ask again" option.
+
 ## [2026.2.0]
 
 ### Added
@@ -173,7 +182,8 @@ see `KNOWN_ISSUES.md` for full root causes:
   YAML.
 - Role support, multi-environment variable preview.
 
-[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.2.0...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.2.1...HEAD
+[2026.2.1]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.2.0...2026.2.1
 [2026.2.0]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.1.1...2026.2.0
 [2026.1.1]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.1.0...2026.1.1
 [2026.1.0]: https://github.com/GapHunterLabs/ansible-companion/compare/0.1.5...2026.1.0
