@@ -4,6 +4,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.ui.Messages
+import dev.gaphunter.ansiblecompanion.review.ReviewPrompt
 
 class EncryptSelectionAction : AnAction() {
 
@@ -23,6 +24,9 @@ class EncryptSelectionAction : AnAction() {
         }
 
         VaultEditorOps.encryptSelection(e.project, editor, password)
+        // No exception means the encryption actually ran and the document
+        // was rewritten -- a real, successful use of the plugin's core action.
+        ReviewPrompt.recordHit(e.project)
     }
 
     override fun update(e: AnActionEvent) {

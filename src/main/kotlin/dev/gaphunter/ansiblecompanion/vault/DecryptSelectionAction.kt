@@ -4,6 +4,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.ui.Messages
+import dev.gaphunter.ansiblecompanion.review.ReviewPrompt
 
 class DecryptSelectionAction : AnAction() {
 
@@ -24,6 +25,9 @@ class DecryptSelectionAction : AnAction() {
 
         try {
             VaultEditorOps.decryptSelection(e.project, editor, password)
+            // Real successful decrypt only -- never the catch branch below
+            // (wrong password / corrupted vault text).
+            ReviewPrompt.recordHit(e.project)
         } catch (ex: AnsibleVaultCipher.VaultFormatException) {
             Messages.showErrorDialog(ex.message ?: "could not decrypt", "Ansible Vault")
         }
