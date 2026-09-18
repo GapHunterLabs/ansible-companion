@@ -4,6 +4,21 @@
 
 ## [Unreleased]
 
+## [2026.3.0]
+
+### Added
+
+- Security hygiene checks (Ansible Companion Pro): three static checks
+  with no `ansible-lint`/`ansible-core` binary required — a
+  password-shaped argument set without `no_log` (CVE-2021-20191), an
+  `include_vars` load of a vault/secret-shaped filename without
+  `no_log` (CVE-2024-8775), and a hardcoded `validate_certs: false`.
+  `no_log` inherited from an enclosing `block:`/`rescue:`/`always:` is
+  correctly recognized as protection. Standard mechanism used
+  catalog-wide since 2026-08-24 applies here too (review/star CTA
+  stays unaffected — these checks never trigger it, same as every
+  other passive inspection).
+
 ## [2026.2.1]
 
 ### Added
