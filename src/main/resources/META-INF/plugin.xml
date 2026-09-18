@@ -18,7 +18,7 @@
          enrolled in Paid or Freemium and keep semver unchanged.
          Do not use a literal double hyphen anywhere in this comment, the
          XML spec forbids it inside comments and patchPluginXml will crash. -->
-    <product-descriptor code="PANSIBLECOMPANI" release-date="20260816" release-version="20262" optional="true"/>
+    <product-descriptor code="PANSIBLECOMPANI" release-date="20260917" release-version="20263" optional="true"/>
     <description><![CDATA[
         <p>Encrypt and decrypt Ansible Vault (1.1/AES256 format) directly in the editor,
         without leaving the IDE and without depending on <code>ansible-vault</code> being
@@ -30,8 +30,12 @@
         <p>FQCN-aware completion for <code>ansible.builtin.*</code>, <code>community.general.*</code>,
         and <code>ansible.posix.*</code> modules (649 total), Jinja2
         (<code>{{ }}</code>/<code>{% %}</code>/<code>{# #}</code>) syntax highlighting inside
-        Ansible YAML, and Ctrl+Click navigation from a role reference to its
-        <code>tasks/main.yml</code> are also available (Ansible Companion Pro).</p>
+        Ansible YAML, Ctrl+Click navigation from a role reference to its
+        <code>tasks/main.yml</code>, and static secret/permission hygiene checks
+        (missing <code>no_log</code> on password-shaped arguments or vault-shaped
+        <code>include_vars</code>, and hardcoded <code>validate_certs: false</code>) --
+        evaluated statically, no <code>ansible-lint</code>/<code>ansible-core</code> binary
+        required -- are also available (Ansible Companion Pro).</p>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
@@ -58,6 +62,8 @@
                                  implementationClass="dev.gaphunter.ansiblecompanion.completion.AnsibleModuleCompletionContributor"/>
         <annotator language="yaml"
                    implementationClass="dev.gaphunter.ansiblecompanion.completion.JinjaHighlightingAnnotator"/>
+        <annotator language="yaml"
+                   implementationClass="dev.gaphunter.ansiblecompanion.security.AnsibleSecurityAnnotator"/>
         <gotoDeclarationHandler implementation="dev.gaphunter.ansiblecompanion.navigation.AnsibleRoleGotoDeclarationHandler"/>
     </extensions>
 </idea-plugin>

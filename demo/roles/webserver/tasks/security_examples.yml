@@ -1,0 +1,28 @@
+---
+# Fixtures for Ansible Companion Pro's static security hygiene checks
+# (V1: no_log+password, no_log+vault-shaped include_vars,
+# validate_certs disabled). Not wired into any playbook -- open this
+# file directly in runIde to see the warnings.
+
+- name: set app user password (missing no_log)
+  ansible.builtin.user:
+    name: appuser
+    password: "{{ vault_app_password }}"
+
+- name: load secrets (missing no_log on vault-shaped include)
+  ansible.builtin.include_vars:
+    file: secrets/prod.vault.yml
+
+- name: insecure download (validate_certs disabled)
+  ansible.builtin.get_url:
+    url: https://internal.example.com/artifact.tar.gz
+    dest: /tmp/artifact.tar.gz
+    validate_certs: false
+
+- name: password set inside a protected block
+  block:
+    - name: set db password (protected by block-level no_log)
+      community.mysql.mysql_user:
+        name: dbuser
+        password: "{{ vault_db_password }}"
+  no_log: true
