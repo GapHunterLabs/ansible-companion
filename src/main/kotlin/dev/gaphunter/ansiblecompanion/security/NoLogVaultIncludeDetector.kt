@@ -14,6 +14,10 @@ package dev.gaphunter.ansiblecompanion.security
  * known, accepted false negative, not a bug -- see the plugin's own
  * README/CHANGELOG for the current list of known limitations.
  *
+ * Reads the file reference from `file:`/`dir:`, or from the free-form
+ * style `include_vars: secrets/prod.vault.yml` -- arguably the most
+ * common way it's written.
+ *
  * Scoped to `include_vars` only -- Ansible's other vars-loading
  * mechanism, `vars_files:`, is a PLAY-level keyword (a sibling of
  * `tasks:`, not something that appears as a task in the sequences this
@@ -28,7 +32,7 @@ object NoLogVaultIncludeDetector {
         val module = task.moduleName ?: return null
         if (module !in INCLUDE_VARS_MODULES) return null
         if (task.hasNoLog || noLogInherited) return null
-        val fileRef = task.parameters["file"] ?: task.parameters["dir"] ?: return null
+        val fileRef = task.parameters["file"] ?: task.parameters["dir"] ?: task.moduleFreeForm ?: return null
         if (!VAULT_SHAPED_NAME.containsMatchIn(fileRef)) return null
         return SecurityFinding(
             "NO_LOG_VAULT_INCLUDE",

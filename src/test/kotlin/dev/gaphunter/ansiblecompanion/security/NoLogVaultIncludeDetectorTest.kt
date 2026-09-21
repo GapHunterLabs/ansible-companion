@@ -65,6 +65,24 @@ class NoLogVaultIncludeDetectorTest {
     }
 
     @Test
+    fun flagsFreeFormIncludeVars() {
+        val finding = NoLogVaultIncludeDetector.check(
+            AnsibleTask("include_vars", emptyMap(), hasNoLog = false, isGroupingConstruct = false, moduleFreeForm = "secrets/prod.vault.yml"),
+            noLogInherited = false,
+        )
+        assertNotNull(finding)
+    }
+
+    @Test
+    fun doesNotFlagFreeFormIncludeVarsProtectedByNoLog() {
+        val finding = NoLogVaultIncludeDetector.check(
+            AnsibleTask("include_vars", emptyMap(), hasNoLog = true, isGroupingConstruct = false, moduleFreeForm = "secrets/prod.vault.yml"),
+            noLogInherited = false,
+        )
+        assertNull(finding)
+    }
+
+    @Test
     fun doesNotFlagWhenNoFileOrDirParam() {
         val finding = NoLogVaultIncludeDetector.check(
             task("ansible.builtin.include_vars", mapOf("name" to "x")),

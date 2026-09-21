@@ -52,25 +52,58 @@ The password is never saved or cached between uses.
   entry, or `include_role`/`import_role`'s `name:`) to that role's
   `tasks/main.yml`.
 - **Security hygiene checks** — static, no `ansible-lint`/`ansible-core`
-  binary required (works natively on Windows). Three checks in this
-  first release:
+  binary required (works natively on Windows).
+
+  Secret exposure:
   - A task sets a password-shaped argument (`user.password`,
     `mysql_user.password`, `uri.password`, etc.) without `no_log` —
     the value can end up in console/CI logs (CVE-2021-20191).
   - `include_vars` loads a file whose name looks vault/secret-shaped
-    (contains `vault` or `secret`) without `no_log` (CVE-2024-8775).
+    (contains `vault` or `secret`) without `no_log` — including the
+    free-form style `include_vars: secrets/prod.vault.yml`
+    (CVE-2024-8775).
   - `validate_certs: false`/`no` hardcoded on a task.
 
+  File and shell hygiene:
+  - A module that creates a file or directory (`copy`, `template`,
+    `file` with `state: directory`/`touch`, `get_url`, `assemble`,
+    `archive`, and `lineinfile`/`blockinfile`/`ini_file`/`htpasswd`
+    when they'll create the file) without an explicit `mode` — the
+    result depends on the remote host's umask. Not flagged for
+    `state: absent`/`link`/`hard`, `recurse`, or `file` with its
+    default state (which only modifies an existing path).
+  - An unquoted `mode: 755` — YAML reads it as the decimal number 755,
+    which sets permissions 01363, not 0755. Only reported when the
+    resulting permissions are actually nonsensical (`mode: 420` is
+    exactly 0644 and isn't flagged); quoted and leading-zero values
+    never are.
+  - A `shell` pipeline without `set -o pipefail` — if any command
+    before the last one fails, the task still reports success. `||`,
+    Jinja filters (`{{ x | default('y') }}`), and a `|` inside quotes
+    (`grep -E 'a|b'`) aren't treated as pipes; `command` tasks and
+    tasks with `ignore_errors` aren't checked.
+
   `no_log` set on an enclosing `block:`/`rescue:`/`always:` protects
-  the tasks inside it, same as real Ansible. Known limitations, by
-  design: the vault/secret check is a filename heuristic (a
-  differently-named vault file won't be flagged), and inheritance is
-  only resolved within the same file — a play-level or role-level
-  `no_log` won't be picked up. Only the `no_log`+password check maps
-  to an actual `ansible-lint` rule tag (`security`); the rest live in
-  its `safety` profile or are this plugin's own addition
-  (`validate_certs`) — this isn't a reimplementation of
-  `ansible-lint`.
+  the tasks inside it, same as real Ansible. Arguments given through a
+  task's `args:` are read too. Known limitations, by design: the
+  vault/secret check is a filename heuristic (a differently-named
+  vault file won't be flagged), inheritance is only resolved within
+  the same file — a play-level or role-level `no_log` won't be picked
+  up — and free-form `key=value` arguments (`copy: src=a dest=b`)
+  aren't parsed.
+
+  Where each check comes from — this isn't a reimplementation of
+  `ansible-lint`:
+  - `no_log` + password → `ansible-lint`'s `no-log-password` (opt-in,
+    tagged `security`).
+  - File permissions, unquoted octal mode, shell pipefail →
+    `ansible-lint`'s `risky-file-permissions`, `risky-octal`, and
+    `risky-shell-pipe`, from its `safety` profile. Each is a bit
+    narrower than upstream, always in the direction of fewer false
+    alarms.
+  - Vault-shaped `include_vars` → backed by CVE-2024-8775; there's no
+    `ansible-lint` equivalent.
+  - `validate_certs` → this plugin's own addition.
 
 All available as an optional paid tier (file-type detection that
 doesn't hijack Kubernetes/Helm/Docker-compose YAML — the free tier's

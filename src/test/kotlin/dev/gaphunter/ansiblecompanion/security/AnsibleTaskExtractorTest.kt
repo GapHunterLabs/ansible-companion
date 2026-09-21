@@ -117,6 +117,120 @@ class AnsibleTaskExtractorTest : BasePlatformTestCase() {
         assertFalse("a nested mapping value should be omitted, not stringified", task.parameters.containsKey("owner"))
     }
 
+    fun testCapturesFreeFormModuleValue() {
+        val file = myFixture.configureByText(
+            "main.yml",
+            """
+            - name: free form shell
+              ansible.builtin.shell: cat /var/log/app.log | grep ERROR
+            """.trimIndent(),
+        )
+        val task = AnsibleTaskExtractor.extract(findTaskNamed(file, "free form shell"))
+        assertEquals("ansible.builtin.shell", task.moduleName)
+        assertEquals("cat /var/log/app.log | grep ERROR", task.moduleFreeForm)
+        assertTrue(task.parameters.isEmpty())
+    }
+
+    fun testCapturesBlockScalarFreeFormWithoutTheYamlIndicator() {
+        val file = myFixture.configureByText(
+            "main.yml",
+            """
+            - name: block shell
+              ansible.builtin.shell: |
+                set -o pipefail
+                cat a | grep b
+            """.trimIndent(),
+        )
+        val task = AnsibleTaskExtractor.extract(findTaskNamed(file, "block shell"))
+        val freeForm = task.moduleFreeForm!!
+        assertFalse("the YAML block indicator is syntax, not command text", freeForm.trimStart().startsWith("|"))
+        assertTrue(freeForm.contains("set -o pipefail"))
+        assertTrue(freeForm.contains("cat a | grep b"))
+    }
+
+    fun testModuleFreeFormIsNullForAMappingValue() {
+        val file = myFixture.configureByText(
+            "main.yml",
+            """
+            - name: mapping form
+              ansible.builtin.copy:
+                src: a
+                dest: b
+            """.trimIndent(),
+        )
+        assertNull(AnsibleTaskExtractor.extract(findTaskNamed(file, "mapping form")).moduleFreeForm)
+    }
+
+    fun testDistinguishesQuotedFromUnquotedParameters() {
+        val file = myFixture.configureByText(
+            "main.yml",
+            """
+            - name: modes
+              ansible.builtin.file:
+                path: /srv/app
+                mode: 755
+                owner: "app"
+                group: 'app'
+            """.trimIndent(),
+        )
+        val task = AnsibleTaskExtractor.extract(findTaskNamed(file, "modes"))
+        assertEquals("755", task.parameters["mode"])
+        assertTrue("mode" in task.unquotedParameters)
+        assertTrue("path" in task.unquotedParameters)
+        assertFalse("double-quoted must not count as unquoted", "owner" in task.unquotedParameters)
+        assertFalse("single-quoted must not count as unquoted", "group" in task.unquotedParameters)
+        assertEquals("app", task.parameters["owner"])
+    }
+
+    fun testMergesTaskLevelArgsWithInlineArgumentsWinning() {
+        val file = myFixture.configureByText(
+            "main.yml",
+            """
+            - name: with args
+              ansible.builtin.get_url:
+                url: https://example.com/a
+                dest: /tmp/inline
+              args:
+                validate_certs: false
+                dest: /tmp/from-args
+            """.trimIndent(),
+        )
+        val task = AnsibleTaskExtractor.extract(findTaskNamed(file, "with args"))
+        assertEquals("ansible.builtin.get_url", task.moduleName)
+        assertEquals("false", task.parameters["validate_certs"])
+        assertEquals("/tmp/inline", task.parameters["dest"])
+    }
+
+    fun testTaskLevelArgsReachFreeFormModules() {
+        val file = myFixture.configureByText(
+            "main.yml",
+            """
+            - name: free form with args
+              ansible.builtin.shell: Get-Process | Select-Object Name
+              args:
+                executable: /usr/bin/pwsh
+            """.trimIndent(),
+        )
+        val task = AnsibleTaskExtractor.extract(findTaskNamed(file, "free form with args"))
+        assertEquals("/usr/bin/pwsh", task.parameters["executable"])
+        assertEquals("Get-Process | Select-Object Name", task.moduleFreeForm)
+    }
+
+    fun testCapturesIgnoreErrors() {
+        val file = myFixture.configureByText(
+            "main.yml",
+            """
+            - name: tolerant
+              ansible.builtin.shell: cat a | grep b
+              ignore_errors: yes
+            - name: strict
+              ansible.builtin.shell: cat a | grep b
+            """.trimIndent(),
+        )
+        assertTrue(AnsibleTaskExtractor.extract(findTaskNamed(file, "tolerant")).ignoresErrors)
+        assertFalse(AnsibleTaskExtractor.extract(findTaskNamed(file, "strict")).ignoresErrors)
+    }
+
     fun testResolveNoLogInherited_trueWhenProtectedByEnclosingBlock() {
         val file = myFixture.configureByText(
             "main.yml",
