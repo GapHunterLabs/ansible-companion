@@ -222,7 +222,8 @@
   YAML.
 - Role support, multi-environment variable preview.
 
-[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.3.0...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.4.0...HEAD
+[2026.4.0]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.3.0...2026.4.0
 [2026.3.0]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.2.1...2026.3.0
 [2026.2.1]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.2.0...2026.2.1
 [2026.2.0]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.1.1...2026.2.0
