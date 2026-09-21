@@ -18,7 +18,7 @@
          enrolled in Paid or Freemium and keep semver unchanged.
          Do not use a literal double hyphen anywhere in this comment, the
          XML spec forbids it inside comments and patchPluginXml will crash. -->
-    <product-descriptor code="PANSIBLECOMPANI" release-date="20260917" release-version="20263" optional="true"/>
+    <product-descriptor code="PANSIBLECOMPANI" release-date="20260920" release-version="20264" optional="true"/>
     <description><![CDATA[
         <p>Encrypt and decrypt Ansible Vault (1.1/AES256 format) directly in the editor,
         without leaving the IDE and without depending on <code>ansible-vault</code> being
@@ -33,9 +33,12 @@
         Ansible YAML, Ctrl+Click navigation from a role reference to its
         <code>tasks/main.yml</code>, and static secret/permission hygiene checks
         (missing <code>no_log</code> on password-shaped arguments or vault-shaped
-        <code>include_vars</code>, and hardcoded <code>validate_certs: false</code>) --
-        evaluated statically, no <code>ansible-lint</code>/<code>ansible-core</code> binary
-        required -- are also available (Ansible Companion Pro).</p>
+        <code>include_vars</code>, hardcoded <code>validate_certs: false</code>, files
+        created without an explicit <code>mode</code>, unquoted decimal modes like
+        <code>mode: 755</code>, and <code>shell</code> pipelines without
+        <code>pipefail</code>) -- evaluated statically, no
+        <code>ansible-lint</code>/<code>ansible-core</code> binary required -- are also
+        available (Ansible Companion Pro).</p>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>

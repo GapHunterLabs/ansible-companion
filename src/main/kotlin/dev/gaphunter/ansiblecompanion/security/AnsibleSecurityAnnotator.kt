@@ -36,11 +36,11 @@ private object SecurityLicenseCache {
 
 /**
  * Ansible Companion Pro: static secret/permission hygiene checks on
- * task-shaped YAML sequence items. V1 ships 3 detectors (Tier A:
- * [NoLogPasswordDetector], [NoLogVaultIncludeDetector],
- * [ValidateCertsDetector]) -- Tier B/C (file permissions, octal mode,
- * shell pipes) are a deliberately deferred V1.1, not missing by
- * accident.
+ * task-shaped YAML sequence items -- secret exposure
+ * ([NoLogPasswordDetector], [NoLogVaultIncludeDetector],
+ * [ValidateCertsDetector]) and file/shell hygiene
+ * ([RiskyFilePermissionsDetector], [RiskyOctalModeDetector],
+ * [RiskyShellPipeDetector]).
  *
  * Registered `language="yaml"`, same as `JinjaHighlightingAnnotator`.
  * Re-verifies [AnsibleFileDetector] directly against the real
@@ -91,6 +91,9 @@ class AnsibleSecurityAnnotator : Annotator {
             NoLogPasswordDetector.check(task, noLogInherited),
             NoLogVaultIncludeDetector.check(task, noLogInherited),
             ValidateCertsDetector.check(task, noLogInherited),
+            RiskyFilePermissionsDetector.check(task, noLogInherited),
+            RiskyOctalModeDetector.check(task, noLogInherited),
+            RiskyShellPipeDetector.check(task, noLogInherited),
         )
         if (findings.isEmpty()) return null
 

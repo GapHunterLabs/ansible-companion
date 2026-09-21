@@ -4,6 +4,34 @@
 
 ## [Unreleased]
 
+## [2026.4.0]
+
+### Added
+
+- Three more security hygiene checks (Ansible Companion Pro), from
+  `ansible-lint`'s `safety` profile and still with no binary required:
+  - A file or directory created without an explicit `mode`
+    (`risky-file-permissions`) — skipped where no file is actually
+    created, including `file` with its default state.
+  - An unquoted decimal `mode: 755`, which YAML reads as 755 decimal
+    and sets permissions 01363 (`risky-octal`) — only when the
+    resulting permissions are actually nonsensical.
+  - A `shell` pipeline without `set -o pipefail`
+    (`risky-shell-pipe`) — `||`, Jinja filters, and `|` inside quotes
+    aren't mistaken for pipes.
+
+### Fixed
+
+- The vault-shaped `include_vars` check now also catches the
+  free-form style `include_vars: secrets/prod.vault.yml`, which it
+  previously missed.
+- Arguments passed through a task's `args:` are now read by every
+  check (e.g. `args: { validate_certs: false }`).
+- The README credited the vault-shaped `include_vars` check to
+  `ansible-lint`'s `safety` profile. It has no `ansible-lint`
+  equivalent — it's backed by CVE-2024-8775. Each check's actual
+  source is now listed individually.
+
 ## [2026.3.0]
 
 ### Added
@@ -105,14 +133,11 @@
   the paid Ansible Companion Pro tier. Unlicensed users see a single
   upsell item instead of the real completions.
 - Jinja2 (`{{ }}`/`{% %}`/`{# #}`) syntax highlighting inside Ansible
+
   YAML scalars, also part of the Pro tier — pure text-scan detection, no
   real Jinja2 engine or Python dependency.
 
 ### Fixed
-
-Seven real bugs found and fixed during integration — five caught live in
-`runIde`, two caught only by the full `verifyPlugin` (6 target IDEs) —
-see `KNOWN_ISSUES.md` for full root causes:
 
 - Infinite recursion (`StackOverflowError`) in the Ansible file
   detector: it read file content via `VirtualFile.contentsToByteArray()`,
@@ -197,7 +222,8 @@ see `KNOWN_ISSUES.md` for full root causes:
   YAML.
 - Role support, multi-environment variable preview.
 
-[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.2.1...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.3.0...HEAD
+[2026.3.0]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.2.1...2026.3.0
 [2026.2.1]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.2.0...2026.2.1
 [2026.2.0]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.1.1...2026.2.0
 [2026.1.1]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.1.0...2026.1.1

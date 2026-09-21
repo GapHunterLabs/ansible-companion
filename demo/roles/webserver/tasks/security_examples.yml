@@ -1,8 +1,11 @@
 ---
-# Fixtures for Ansible Companion Pro's static security hygiene checks
-# (V1: no_log+password, no_log+vault-shaped include_vars,
-# validate_certs disabled). Not wired into any playbook -- open this
-# file directly in runIde to see the warnings.
+# Fixtures for Ansible Companion Pro's static security hygiene checks.
+# Not wired into any playbook -- open this file directly in runIde to
+# see the warnings. Tasks marked "NOT flagged" are the false-positive
+# traps each check is built to avoid. AnsibleSecurityAnnotatorTest reads
+# this exact file, so a change here is a change to that test too.
+
+# --- Secret exposure ---
 
 - name: set app user password (missing no_log)
   ansible.builtin.user:
@@ -13,10 +16,14 @@
   ansible.builtin.include_vars:
     file: secrets/prod.vault.yml
 
+- name: load secrets, free-form style (missing no_log)
+  ansible.builtin.include_vars: secrets/staging.vault.yml
+
 - name: insecure download (validate_certs disabled)
   ansible.builtin.get_url:
     url: https://internal.example.com/artifact.tar.gz
     dest: /tmp/artifact.tar.gz
+    mode: "0644"
     validate_certs: false
 
 - name: password set inside a protected block
@@ -26,3 +33,33 @@
         name: dbuser
         password: "{{ vault_db_password }}"
   no_log: true
+
+# --- File and shell hygiene ---
+
+- name: create config without explicit mode
+  ansible.builtin.copy:
+    src: app.conf
+    dest: /etc/app/app.conf
+
+- name: fix ownership of an existing file (NOT flagged, default state creates nothing)
+  ansible.builtin.file:
+    path: /etc/app/app.conf
+    owner: app
+
+- name: decimal mode that looks octal
+  ansible.builtin.template:
+    src: app.sh.j2
+    dest: /usr/local/bin/app.sh
+    mode: 755
+
+- name: correctly quoted octal mode (NOT flagged)
+  ansible.builtin.template:
+    src: app.sh.j2
+    dest: /usr/local/bin/app-check.sh
+    mode: "0755"
+
+- name: pipeline without pipefail
+  ansible.builtin.shell: cat /var/log/app.log | grep ERROR
+
+- name: Jinja filter is not a shell pipe (NOT flagged)
+  ansible.builtin.shell: echo {{ app_version | default('latest') }}
