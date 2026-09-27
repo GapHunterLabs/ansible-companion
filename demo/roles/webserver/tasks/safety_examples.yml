@@ -1,0 +1,95 @@
+---
+# Fixtures for the rest of ansible-lint's `safety` profile in Ansible Companion Pro:
+# package-latest, latest and avoid-implicit[copy-content].
+# Not wired into any playbook -- open this file directly in runIde to see the
+# warnings. Tasks marked "NOT flagged" are the false-positive traps each check is
+# built to avoid. SafetyProfileFixtureTest reads this exact file, so a change here
+# is a change to that test too.
+
+# --- package-latest ---
+
+- name: upgrade nginx on every run
+  ansible.builtin.apt:
+    name: nginx
+    state: latest
+
+- name: upgrade with dnf, extra packages allowed
+  ansible.builtin.dnf:
+    name: httpd
+    state: latest
+    update_only: false
+
+- name: old key=value style, latest
+  ansible.builtin.yum: name=httpd state=latest
+
+- name: pip latest
+  ansible.builtin.pip:
+    name: requests
+    state: latest
+
+# --- latest ---
+
+- name: checkout the moving head
+  ansible.builtin.git:
+    repo: https://github.com/example/app.git
+    dest: /srv/app
+    version: HEAD
+
+# --- avoid-implicit[copy-content] ---
+
+- name: write a dict with an implicit conversion
+  ansible.builtin.copy:
+    content: { "port": 8080, "debug": false }
+    dest: /etc/app/settings.json
+    mode: "0644"
+
+- name: write a list with an implicit conversion (block style)
+  ansible.builtin.copy:
+    content:
+      - alpha
+      - beta
+    dest: /etc/app/list.json
+    mode: "0644"
+
+# --- NOT flagged ---
+
+- name: pinned package (NOT flagged)
+  ansible.builtin.apt:
+    name: nginx=1.24.0-1
+    state: present
+
+- name: safe upgrade only, dnf (NOT flagged)
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+    update_only: true
+
+- name: safe upgrade only, apt (NOT flagged)
+  ansible.builtin.apt:
+    name: "*"
+    state: latest
+    only_upgrade: true
+
+- name: state chosen by a variable (NOT flagged)
+  ansible.builtin.apt:
+    name: nginx
+    state: "{{ nginx_state }}"
+
+- name: pinned checkout (NOT flagged)
+  ansible.builtin.git:
+    repo: https://github.com/example/app.git
+    dest: /srv/app
+    version: v1.4.2
+
+- name: explicit conversion (NOT flagged)
+  ansible.builtin.copy:
+    content: "{{ settings | to_json }}"
+    dest: /etc/app/settings.json
+    mode: "0644"
+
+- name: block scalar content (NOT flagged)
+  ansible.builtin.copy:
+    content: |
+      key=value
+    dest: /etc/app/plain.conf
+    mode: "0644"

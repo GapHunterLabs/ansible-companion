@@ -1,0 +1,16 @@
+<html>
+<body>
+Reports a gathered fact used as a top-level variable, such as <code>ansible_os_family</code>,
+<code>ansible_distribution</code> or <code>ansible_default_ipv4</code>, in an Ansible playbook, role or variables file.
+<p>ansible-core 2.20 deprecates injecting facts as top-level variables: <code>INJECT_FACTS_AS_VARS</code> still
+defaults to <code>True</code> in 2.20 but defaults to <code>False</code> in 2.24, after which only
+<code>ansible_facts['os_family']</code> (or <code>ansible_facts.os_family</code>) keeps working. The quick fix rewrites the
+variable to the <code>ansible_facts</code> form, which works in every supported version.</p>
+<p>Only names that are gathered facts are reported. Connection settings and magic variables
+(<code>ansible_host</code>, <code>ansible_user</code>, <code>ansible_connection</code>, <code>ansible_python_interpreter</code>,
+<code>ansible_check_mode</code>, <code>ansible_version</code>, <code>ansible_play_hosts</code>, ...) keep working and are never
+reported. Checked inside <code>{{ }}</code> and <code>{% %}</code>, and in the value of <code>when</code>,
+<code>failed_when</code>, <code>changed_when</code>, <code>until</code> and <code>that</code>; text inside quoted strings in an
+expression, and variables reached through another object (<code>hostvars[h].ansible_os_family</code>), are left alone.</p>
+</body>
+</html>

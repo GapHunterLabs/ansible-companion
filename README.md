@@ -41,6 +41,27 @@ Select text in the editor → right-click:
 
 The password is never saved or cached between uses.
 
+### Migrating to ansible-core 2.20 (free)
+
+ansible-core 2.20 deprecates injecting gathered facts as top-level
+variables: `ansible_os_family`, `ansible_distribution`,
+`ansible_default_ipv4` and the rest still work in 2.20, but
+`INJECT_FACTS_AS_VARS` becomes `False` in 2.24 and only
+`ansible_facts['os_family']` keeps working. Every such use in an Ansible
+playbook, role or variables file gets a weak warning with a quick fix
+(`ansible_os_family` -> `ansible_facts.os_family`, valid in every
+supported version; **Fix all in file** rewrites the whole file).
+
+Checked inside `{{ }}`/`{% %}` and in the value of `when`, `failed_when`,
+`changed_when`, `until` and `that`. Only names that are gathered facts are
+reported — connection settings and magic variables (`ansible_host`,
+`ansible_user`, `ansible_python_interpreter`, `ansible_check_mode`,
+`ansible_play_hosts`, ...) keep working and are never touched. Text inside
+a quoted string in an expression and variables reached through another
+object (`hostvars[h].ansible_os_family`) are left alone. It's an ordinary
+inspection (Settings -> Editor -> Inspections -> Ansible), so it can be
+turned off or given another severity.
+
 ## Ansible Companion Pro
 
 - FQCN-aware completion — `ansible.builtin.*` (69 modules),
@@ -53,6 +74,17 @@ The password is never saved or cached between uses.
   `tasks/main.yml`.
 - **Security hygiene checks** — static, no `ansible-lint`/`ansible-core`
   binary required (works natively on Windows).
+
+  Package, checkout and content safety:
+  - A package manager task (`apt`, `dnf`, `yum`, `package`, `pip`, `npm`,
+    ...) with `state: latest` — it upgrades on every run, so the play's
+    result depends on when it runs. Allowed with `update_only: true`
+    (dnf/yum) or `only_upgrade: true` (apt).
+  - A `git` task with `version: HEAD` (or `hg` with `revision: tip`) —
+    two runs can deploy different code; pin a tag or a commit.
+  - `copy` with a dict or list as `content` — written out through an
+    undocumented implicit conversion; convert it explicitly
+    (`content: "{{ value | to_json }}"`).
 
   Secret exposure:
   - A task sets a password-shaped argument (`user.password`,
@@ -101,6 +133,14 @@ The password is never saved or cached between uses.
     `risky-shell-pipe`, from its `safety` profile. Each is a bit
     narrower than upstream, always in the direction of fewer false
     alarms.
+  - `state: latest` on a package manager task, `version: HEAD` on a
+    `git` task (or `revision: tip` on `hg`), and a dict or list as
+    `copy`'s `content` → `ansible-lint`'s `package-latest`, `latest`
+    and `avoid-implicit[copy-content]`, which complete its `safety`
+    profile. `state: latest` is fine with `update_only: true` (dnf/yum)
+    or `only_upgrade: true` (apt); only an explicit `HEAD`/`tip` is
+    reported, not an omitted version; the old `key=value` style is read
+    for package tasks.
   - Vault-shaped `include_vars` → backed by CVE-2024-8775; there's no
     `ansible-lint` equivalent.
   - `validate_certs` → this plugin's own addition.
