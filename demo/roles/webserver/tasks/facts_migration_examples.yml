@@ -1,0 +1,33 @@
+---
+# Fixtures for the ansible-core 2.20 fact-variable migration check (Free):
+# facts used as top-level variables (`ansible_os_family`) are deprecated in 2.20 and
+# stop being injected in 2.24 -- use `ansible_facts.os_family`.
+# Not wired into any playbook -- open this file directly in runIde to see the weak
+# warnings and the quick fix. The last task holds the traps that must NOT be reported.
+# AnsibleLegacyFactVariableInspectionTest reads this exact file.
+
+- name: install on the Debian family
+  ansible.builtin.apt:
+    name: nginx
+  when: ansible_os_family == "Debian"
+
+- name: templated path
+  ansible.builtin.file:
+    path: "/srv/{{ ansible_hostname }}/data"
+    state: directory
+    mode: "0755"
+
+- name: print the address
+  ansible.builtin.debug:
+    msg: "{{ ansible_default_ipv4.address }}"
+
+- name: version gate with two facts
+  ansible.builtin.debug:
+    msg: supported
+  when:
+    - ansible_distribution == "RedHat"
+    - ansible_distribution_major_version | int >= 8
+
+- name: connection settings, the new form and quoted text (NOT flagged)
+  ansible.builtin.debug:
+    msg: "{{ ansible_host }} {{ ansible_user }} {{ ansible_facts['os_family'] }} {{ ansible_python_interpreter }} {{ 'ansible_os_family' }}"

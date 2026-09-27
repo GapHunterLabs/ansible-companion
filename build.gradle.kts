@@ -24,6 +24,13 @@ dependencies {
     }
 }
 
+// Precision run on a real corpus (see AnsibleCorpusPrecisionTest): only when -Pansible.corpus=<dir> is given.
+tasks.withType<Test>().configureEach {
+    listOf("ansible.corpus", "ansible.corpus.report").forEach { key ->
+        providers.gradleProperty(key).orNull?.let { systemProperty(key, it) }
+    }
+}
+
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {

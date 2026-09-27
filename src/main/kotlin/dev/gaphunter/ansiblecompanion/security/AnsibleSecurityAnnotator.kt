@@ -40,7 +40,9 @@ private object SecurityLicenseCache {
  * ([NoLogPasswordDetector], [NoLogVaultIncludeDetector],
  * [ValidateCertsDetector]) and file/shell hygiene
  * ([RiskyFilePermissionsDetector], [RiskyOctalModeDetector],
- * [RiskyShellPipeDetector]).
+ * [RiskyShellPipeDetector]), plus the rest of ansible-lint's `safety`
+ * profile ([PackageLatestDetector], [LatestVersionDetector],
+ * [AvoidImplicitCopyContentDetector]).
  *
  * Registered `language="yaml"`, same as `JinjaHighlightingAnnotator`.
  * Re-verifies [AnsibleFileDetector] directly against the real
@@ -94,6 +96,9 @@ class AnsibleSecurityAnnotator : Annotator {
             RiskyFilePermissionsDetector.check(task, noLogInherited),
             RiskyOctalModeDetector.check(task, noLogInherited),
             RiskyShellPipeDetector.check(task, noLogInherited),
+            PackageLatestDetector.check(task, noLogInherited),
+            LatestVersionDetector.check(task, noLogInherited),
+            AvoidImplicitCopyContentDetector.check(task, noLogInherited),
         )
         if (findings.isEmpty()) return null
 

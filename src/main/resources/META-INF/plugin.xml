@@ -18,7 +18,7 @@
          enrolled in Paid or Freemium and keep semver unchanged.
          Do not use a literal double hyphen anywhere in this comment, the
          XML spec forbids it inside comments and patchPluginXml will crash. -->
-    <product-descriptor code="PANSIBLECOMPANI" release-date="20260920" release-version="20264" optional="true"/>
+    <product-descriptor code="PANSIBLECOMPANI" release-date="20260926" release-version="20265" optional="true"/>
     <description><![CDATA[
         <p>Encrypt and decrypt Ansible Vault (1.1/AES256 format) directly in the editor,
         without leaving the IDE and without depending on <code>ansible-vault</code> being
@@ -35,10 +35,15 @@
         (missing <code>no_log</code> on password-shaped arguments or vault-shaped
         <code>include_vars</code>, hardcoded <code>validate_certs: false</code>, files
         created without an explicit <code>mode</code>, unquoted decimal modes like
-        <code>mode: 755</code>, and <code>shell</code> pipelines without
-        <code>pipefail</code>) -- evaluated statically, no
+        <code>mode: 755</code>, <code>shell</code> pipelines without
+        <code>pipefail</code>, <code>state: latest</code> on package managers,
+        <code>git</code> checkouts of <code>HEAD</code>, and a dict or list as <code>copy</code>'s
+        <code>content</code>) -- evaluated statically, no
         <code>ansible-lint</code>/<code>ansible-core</code> binary required -- are also
         available (Ansible Companion Pro).</p>
+        <p>Free: a migration check for ansible-core 2.20 -- facts used as top-level variables
+        (<code>ansible_os_family</code>, <code>ansible_distribution</code>, ...) get a quick fix to
+        <code>ansible_facts.os_family</code> before ansible-core 2.24 stops injecting them.</p>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
@@ -68,5 +73,12 @@
         <annotator language="yaml"
                    implementationClass="dev.gaphunter.ansiblecompanion.security.AnsibleSecurityAnnotator"/>
         <gotoDeclarationHandler implementation="dev.gaphunter.ansiblecompanion.navigation.AnsibleRoleGotoDeclarationHandler"/>
+        <localInspection language="yaml"
+                         shortName="AnsibleLegacyFactVariable"
+                         displayName="Fact used as a top-level variable (deprecated in ansible-core 2.20)"
+                         groupName="Ansible"
+                         enabledByDefault="true"
+                         level="WEAK WARNING"
+                         implementationClass="dev.gaphunter.ansiblecompanion.migration.AnsibleLegacyFactVariableInspection"/>
     </extensions>
 </idea-plugin>

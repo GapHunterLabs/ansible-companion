@@ -41,6 +41,8 @@ data class AnsibleTask(
     val moduleFreeForm: String? = null,
     val unquotedParameters: Set<String> = emptySet(),
     val ignoresErrors: Boolean = false,
+    /** Arguments whose value is a mapping or a sequence (`content: {a: b}`), which [parameters] deliberately leaves out. */
+    val nonScalarParameters: Set<String> = emptySet(),
 )
 
 object AnsibleTaskExtractor {
@@ -76,6 +78,7 @@ object AnsibleTaskExtractor {
             moduleFreeForm = (moduleValue as? YAMLScalar)?.textValue,
             unquotedParameters = arguments.filterValues { it.unquoted }.keys,
             ignoresErrors = ignoresErrors,
+            nonScalarParameters = nonScalarArgumentNames(taskArgs) + nonScalarArgumentNames(moduleValue as? YAMLMapping),
         )
     }
 
@@ -114,6 +117,12 @@ object AnsibleTaskExtractor {
             val scalar = kv.value as? YAMLScalar ?: return@mapNotNull null
             ScalarArgument(kv.keyText, scalar.textValue, scalar !is YAMLQuotedText)
         }
+
+    private fun nonScalarArgumentNames(mapping: YAMLMapping?): Set<String> =
+        mapping?.keyValues.orEmpty()
+            .filter { it.value is YAMLMapping || it.value is YAMLSequence }
+            .map { it.keyText }
+            .toSet()
 
     private fun scalarText(keyValue: YAMLKeyValue): String? = (keyValue.value as? YAMLScalar)?.textValue
 

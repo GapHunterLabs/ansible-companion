@@ -4,6 +4,36 @@
 
 ## [Unreleased]
 
+## [2026.5.0]
+
+### Added
+
+- **Migration check for ansible-core 2.20 (free).** Gathered facts used as
+  top-level variables (`ansible_os_family`, `ansible_distribution`,
+  `ansible_default_ipv4`, ...) get a weak warning and a quick fix that
+  rewrites them to `ansible_facts.os_family` (also as **Fix all in file**).
+  ansible-core 2.20 deprecates injecting facts as variables and 2.24 stops
+  (`INJECT_FACTS_AS_VARS` becomes `False`). Checked inside `{{ }}`/`{% %}`
+  and in `when`/`failed_when`/`changed_when`/`until`/`that`; connection
+  settings and magic variables (`ansible_host`, `ansible_user`,
+  `ansible_python_interpreter`, ...) are never reported, nor is text inside
+  a quoted string or a variable reached through another object. It is a
+  normal inspection, so it can be turned off or re-leveled.
+- The rest of `ansible-lint`'s `safety` profile (Ansible Companion Pro),
+  still with no binary required:
+  - A package manager task with `state: latest` (`package-latest`) — fine with
+    `update_only: true` (dnf/yum) or `only_upgrade: true` (apt); a `state`
+    given by a Jinja expression is never flagged; the old `key=value` style is
+    read for these tasks.
+  - `git` with `version: HEAD`, or `hg` with `revision: tip` (`latest`) —
+    only an explicit reference is reported, not an omitted version.
+  - A dict or list as `copy`'s `content` (`avoid-implicit[copy-content]`).
+
+### Fixed
+
+- Review/star CTA now links to this plugin's own Marketplace
+  reviews page instead of the vendor's generic plugin list.
+
 ## [2026.4.0]
 
 ### Added
@@ -222,7 +252,8 @@
   YAML.
 - Role support, multi-environment variable preview.
 
-[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.4.0...HEAD
+[Unreleased]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.5.0...HEAD
+[2026.5.0]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.4.0...2026.5.0
 [2026.4.0]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.3.0...2026.4.0
 [2026.3.0]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.2.1...2026.3.0
 [2026.2.1]: https://github.com/GapHunterLabs/ansible-companion/compare/2026.2.0...2026.2.1
