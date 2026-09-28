@@ -4,6 +4,13 @@ IntelliJ/PyCharm plugin. **Encrypt and decrypt Ansible Vault (1.1/AES256
 format) directly in the editor**, without depending on `ansible-vault`
 being installed.
 
+![Ansible Companion: Ansible Vault in the editor, ansible-core 2.20 migration, and ansible-lint's safety checks without the binary](docs/media/hero.gif)
+
+Each feature on its own:
+[ansible-core 2.20 migration](docs/media/01-facts-migration.gif) ·
+[Safety checks](docs/media/02-safety-checks.gif) ·
+[Ansible Vault in the editor](docs/media/03-vault.gif)
+
 ## Why it exists
 
 Born from real evidence in JetBrains Marketplace reviews, not assumptions:
@@ -31,7 +38,7 @@ real editor.
 
 ## Usage
 
-![Encrypt and decrypt an Ansible Vault value directly in the editor](docs/vault-demo.gif)
+![Encrypt an Ansible Vault file directly in the editor](docs/media/03-vault.gif)
 
 Select text in the editor → right-click:
 - **Encrypt Selection as Ansible Vault** — asks for a password, replaces
