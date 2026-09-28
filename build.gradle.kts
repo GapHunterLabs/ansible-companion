@@ -93,3 +93,18 @@ intellijPlatform {
         password.set(providers.gradleProperty("gapHunterLabs.marketplace.privateKeyPassword"))
     }
 }
+
+// Local testing of the Pro features: a sandbox IDE has no Marketplace
+// license. The switch that opens them (src/devSandbox) is compiled only with
+// `-PdevSandbox=true`, which only local runIde sessions pass; every other
+// build -- tests, buildPlugin, signPlugin, publishPlugin -- compiles the
+// always-closed version in src/release, so the published plugin never
+// contains it.
+val devSandbox = providers.gradleProperty("devSandbox").orNull == "true"
+kotlin.sourceSets["main"].kotlin.srcDir(if (devSandbox) "src/devSandbox/kotlin" else "src/release/kotlin")
+kotlin.sourceSets["test"].kotlin.srcDir(if (devSandbox) "src/devSandboxTest/kotlin" else "src/releaseTest/kotlin")
+if (devSandbox) {
+    tasks.withType<JavaExec>().matching { it.name.startsWith("runIde") }.configureEach {
+        jvmArgs("-Dansiblecompanion.pro.dev=true")
+    }
+}
