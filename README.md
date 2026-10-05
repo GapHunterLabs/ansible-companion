@@ -157,12 +157,20 @@ doesn't hijack Kubernetes/Helm/Docker-compose YAML — the free tier's
 own detection already covers that). Vault encrypt/decrypt above stays
 free forever.
 
-### Enterprise / Team Licensing
-
-Need volume licensing for your team, custom detection rules, or
-priority support? Contact us at **gaphunterlabs@gmail.com**.
-
 Multi-environment variable preview isn't built yet.
+
+### Buying for a team
+
+Pro licenses, for one developer or a whole team, are sold only through
+JetBrains Marketplace: open the [Pricing tab](https://plugins.jetbrains.com/plugin/33082-ansible-companion/pricing) on the plugin's
+page. JetBrains Marketplace handles checkout and license management.
+
+## Support
+
+- **Bugs and feature requests:** [GitHub Issues](https://github.com/GapHunterLabs/ansible-companion/issues)
+- **Questions, or custom rules for a team's codebase:** **gaphunterlabs@gmail.com**
+- **Security vulnerabilities:** report privately as described in [SECURITY.md](SECURITY.md), not in a public issue.
+- **Privacy and network behavior:** [PRIVACY.md](PRIVACY.md)
 
 ## Development
 
