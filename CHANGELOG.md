@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- `PRIVACY.md` describes the values the plugin keeps in the IDE's local
+  settings.
+
 ## [2026.5.0]
 
 ### Added
