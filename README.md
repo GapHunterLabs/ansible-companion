@@ -188,4 +188,6 @@ depend on mouse clicks.
 
 ## License
 
-Apache-2.0. See `LICENSE`.
+The source code is licensed under the Apache License 2.0. See `LICENSE`.
+
+The plugin published on JetBrains Marketplace is distributed under the [Gap Hunter Labs End User License Agreement](https://gaphunterlabs.github.io/eula/) ([Spanish](https://gaphunterlabs.github.io/es/eula/)). The EULA covers the paid license for the Pro features (bought on JetBrains Marketplace), warranty, liability, and support. It does not restrict any right the Apache License gives you over the source code.
