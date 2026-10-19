@@ -4,8 +4,15 @@
 
 ## [Unreleased]
 
+## [2026.6.0]
+
 ### Changed
 
+- **The ansible-core 2.20 migration check is now part of Ansible
+  Companion Pro.** Any installation that runs this version or a later one
+  before November 2, 2026 keeps it without a license. Ansible Vault
+  encryption and decryption stay free.
+- The plugin description lists the free and the Pro features separately.
 - `PRIVACY.md` describes the values the plugin keeps in the IDE's local
   settings.
 

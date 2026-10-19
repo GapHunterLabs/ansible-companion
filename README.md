@@ -7,8 +7,8 @@ being installed.
 ![Ansible Companion: Ansible Vault in the editor, ansible-core 2.20 migration, and ansible-lint's safety checks without the binary](docs/media/hero.gif)
 
 Each feature on its own:
-[ansible-core 2.20 migration](docs/media/01-facts-migration.gif) ·
-[Safety checks](docs/media/02-safety-checks.gif) ·
+[ansible-core 2.20 migration (Pro)](docs/media/01-facts-migration.gif) ·
+[Safety checks (Pro)](docs/media/02-safety-checks.gif) ·
 [Ansible Vault in the editor](docs/media/03-vault.gif)
 
 ## Why it exists
@@ -48,7 +48,12 @@ Select text in the editor → right-click:
 
 The password is never saved or cached between uses.
 
-### Migrating to ansible-core 2.20 (free)
+### Migrating to ansible-core 2.20 (Pro)
+
+Part of Ansible Companion Pro since version 2026.6.0. It was free before:
+any installation that runs version 2026.6.0 or later before November 2,
+2026 keeps it without a license (the plugin records the first day it ran
+in the IDE's local settings to know that).
 
 ansible-core 2.20 deprecates injecting gathered facts as top-level
 variables: `ansible_os_family`, `ansible_distribution`,
@@ -152,10 +157,10 @@ turned off or given another severity.
     `ansible-lint` equivalent.
   - `validate_certs` → this plugin's own addition.
 
-All available as an optional paid tier (file-type detection that
-doesn't hijack Kubernetes/Helm/Docker-compose YAML — the free tier's
-own detection already covers that). Vault encrypt/decrypt above stays
-free forever.
+All available as an optional paid tier, together with the ansible-core
+2.20 migration check above (file-type detection that doesn't hijack
+Kubernetes/Helm/Docker-compose YAML — the free tier's own detection
+already covers that). Vault encrypt/decrypt above stays free forever.
 
 Multi-environment variable preview isn't built yet.
 

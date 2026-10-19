@@ -3,16 +3,44 @@ package dev.gaphunter.ansiblecompanion.migration
 import com.intellij.codeInsight.daemon.impl.HighlightInfo
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import dev.gaphunter.ansiblecompanion.licensing.ProGate
 import java.io.File
 
 /** The migration inspection through the real highlighting pipeline, including its quick fix. */
 class AnsibleLegacyFactVariableInspectionTest : BasePlatformTestCase() {
 
     private val demoFixture = File("demo/roles/webserver/tasks/facts_migration_examples.yml")
+    private lateinit var originalLicense: () -> Boolean?
+    private lateinit var originalLegacy: () -> Boolean
 
     override fun setUp() {
         super.setUp()
         myFixture.enableInspections(AnsibleLegacyFactVariableInspection::class.java)
+        // The test IDE has no license; the check itself is what these tests cover.
+        originalLicense = ProGate.licenseCheck
+        originalLegacy = ProGate.legacyCheck
+        ProGate.licenseCheck = { true }
+    }
+
+    override fun tearDown() {
+        try {
+            ProGate.licenseCheck = originalLicense
+            ProGate.legacyCheck = originalLegacy
+        } finally {
+            super.tearDown()
+        }
+    }
+
+    fun testNothingIsReportedWithoutALicenseOnANewInstallation() {
+        ProGate.licenseCheck = { false }
+        ProGate.legacyCheck = { false }
+        assertEquals(emptyList<HighlightInfo>(), highlights("- name: a\n  ansible.builtin.debug:\n    msg: \"{{ ansible_hostname }}\"\n  when: true\n"))
+    }
+
+    fun testAnInstallationThatHadTheCheckKeepsItWithoutALicense() {
+        ProGate.licenseCheck = { false }
+        ProGate.legacyCheck = { true }
+        assertEquals(1, highlights("- name: a\n  ansible.builtin.debug:\n    msg: \"{{ ansible_hostname }}\"\n  when: true\n").size)
     }
 
     private fun highlights(text: String): List<HighlightInfo> {

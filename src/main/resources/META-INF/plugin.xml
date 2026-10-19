@@ -18,32 +18,32 @@
          enrolled in Paid or Freemium and keep semver unchanged.
          Do not use a literal double hyphen anywhere in this comment, the
          XML spec forbids it inside comments and patchPluginXml will crash. -->
-    <product-descriptor code="PANSIBLECOMPANI" release-date="20260926" release-version="20265" optional="true"/>
+    <product-descriptor code="PANSIBLECOMPANI" release-date="20261019" release-version="20266" optional="true"/>
     <description><![CDATA[
-        <p>Encrypt and decrypt Ansible Vault (1.1/AES256 format) directly in the editor,
-        without leaving the IDE and without depending on <code>ansible-vault</code> being
-        installed (reimplemented with <code>javax.crypto</code>, verified against the
-        official Ansible test suite).</p>
-        <p>Select plain text -> <b>Encrypt Selection as Ansible Vault</b>, or a
-        <code>$ANSIBLE_VAULT;1.1;AES256</code> block -> <b>Decrypt Ansible Vault Selection</b>.
-        Both available from the editor's context menu. The password is never saved or cached.</p>
-        <p>FQCN-aware completion for <code>ansible.builtin.*</code>, <code>community.general.*</code>,
-        and <code>ansible.posix.*</code> modules (649 total), Jinja2
-        (<code>{{ }}</code>/<code>{% %}</code>/<code>{# #}</code>) syntax highlighting inside
-        Ansible YAML, Ctrl+Click navigation from a role reference to its
-        <code>tasks/main.yml</code>, and static secret/permission hygiene checks
-        (missing <code>no_log</code> on password-shaped arguments or vault-shaped
-        <code>include_vars</code>, hardcoded <code>validate_certs: false</code>, files
-        created without an explicit <code>mode</code>, unquoted decimal modes like
-        <code>mode: 755</code>, <code>shell</code> pipelines without
-        <code>pipefail</code>, <code>state: latest</code> on package managers,
-        <code>git</code> checkouts of <code>HEAD</code>, and a dict or list as <code>copy</code>'s
-        <code>content</code>) -- evaluated statically, no
-        <code>ansible-lint</code>/<code>ansible-core</code> binary required -- are also
-        available (Ansible Companion Pro).</p>
-        <p>Free: a migration check for ansible-core 2.20 -- facts used as top-level variables
-        (<code>ansible_os_family</code>, <code>ansible_distribution</code>, ...) get a quick fix to
-        <code>ansible_facts.os_family</code> before ansible-core 2.24 stops injecting them.</p>
+        <p>Ansible Vault, FQCN completion and safety checks for Ansible YAML, with no ansible-vault, ansible-lint or ansible-core binary required. Everything runs inside the IDE: no network calls, no telemetry.</p>
+        <p><b>Free</b></p>
+        <ul>
+          <li><b>Ansible Vault in the editor:</b> encrypt a selection as an Ansible Vault 1.1/AES256 block, or decrypt one, from the editor's context menu. The password is never saved or cached.</li>
+          <li><b>Ansible-only file detection:</b> playbooks and role files are recognized by path and content, so Kubernetes, Helm and Docker Compose YAML keep their own editors.</li>
+        </ul>
+        <p><b>Ansible Companion Pro</b> (paid, with a free trial)</p>
+        <ul>
+          <li><b>FQCN-aware completion</b> for 649 modules: <code>ansible.builtin.*</code>, <code>community.general.*</code> and <code>ansible.posix.*</code>.</li>
+          <li><b>Jinja2 highlighting</b> for <code>{{ }}</code>, <code>{% %}</code> and <code>{# #}</code> inside Ansible YAML.</li>
+          <li><b>Role navigation:</b> Ctrl+Click (or Ctrl+B) on a role reference opens its <code>tasks/main.yml</code>.</li>
+          <li><b>9 safety checks</b>, evaluated statically and working natively on Windows:
+            <ul>
+              <li>password-shaped arguments without <code>no_log</code> (CVE-2021-20191), and vault-shaped <code>include_vars</code> without <code>no_log</code> (CVE-2024-8775);</li>
+              <li>hardcoded <code>validate_certs: false</code>;</li>
+              <li>files created without an explicit <code>mode</code>, and unquoted octal modes such as <code>mode: 755</code>;</li>
+              <li><code>shell</code> pipelines without <code>pipefail</code>;</li>
+              <li><code>state: latest</code> on package managers, <code>git</code> checkouts of <code>HEAD</code>, and a dict or list as <code>copy</code>'s <code>content</code>.</li>
+            </ul>
+          </li>
+          <li><b>ansible-core 2.20 migration:</b> facts used as top-level variables (<code>ansible_os_family</code>, <code>ansible_distribution</code>, ...) are flagged, with a quick-fix to <code>ansible_facts.os_family</code>, before ansible-core 2.24 stops injecting them.</li>
+        </ul>
+        <p>The ansible-core 2.20 migration check was free before version 2026.6.0. Any installation that runs version 2026.6.0 or later before November 2, 2026 keeps it without a license.</p>
+        <p><a href="https://github.com/GapHunterLabs/ansible-companion">Documentation</a> · <a href="https://github.com/GapHunterLabs/ansible-companion/issues">Report an issue</a></p>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
@@ -80,5 +80,6 @@
                          enabledByDefault="true"
                          level="WEAK WARNING"
                          implementationClass="dev.gaphunter.ansiblecompanion.migration.AnsibleLegacyFactVariableInspection"/>
+        <postStartupActivity implementation="dev.gaphunter.ansiblecompanion.licensing.FirstSeenStartupActivity"/>
     </extensions>
 </idea-plugin>

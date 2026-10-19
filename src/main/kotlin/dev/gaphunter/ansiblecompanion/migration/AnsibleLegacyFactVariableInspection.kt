@@ -11,6 +11,7 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiElementVisitor
 import dev.gaphunter.ansiblecompanion.detection.AnsibleFileDetector
+import dev.gaphunter.ansiblecompanion.licensing.ProGate
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLQuotedText
 import org.jetbrains.yaml.psi.YAMLScalar
@@ -22,7 +23,8 @@ import org.jetbrains.yaml.psi.YAMLSequenceItem
  * which ansible-core 2.20 deprecates and 2.24 stops injecting -- see
  * [LegacyFactVariableDetector] for what counts and why. A weak warning with a
  * quick fix, so a playbook can be migrated in a few keystrokes before the
- * default flips. Free: it is a migration aid, not one of the Pro checks.
+ * default flips. Ansible Companion Pro since 2026.6.0; an installation that
+ * had it before keeps it (see [dev.gaphunter.ansiblecompanion.licensing.LegacyFreeFeatures]).
  *
  * An inspection rather than an annotator so it can be turned off, have its
  * severity changed, or be suppressed like any other, and so "fix all in file"
@@ -31,7 +33,8 @@ import org.jetbrains.yaml.psi.YAMLSequenceItem
 class AnsibleLegacyFactVariableInspection : LocalInspectionTool() {
 
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor =
-        object : PsiElementVisitor() {
+        // Asked once per highlighting pass of a file, not once per scalar.
+        if (!ProGate.allowsMovedFeatures()) PsiElementVisitor.EMPTY_VISITOR else object : PsiElementVisitor() {
             override fun visitElement(element: PsiElement) {
                 if (element !is YAMLScalar) return
                 for (hit in hitsIn(element)) {
